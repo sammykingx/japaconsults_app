@@ -1,42 +1,47 @@
 from pydantic import BaseModel
+from typing import Dict, List
+from datetime import datetime
 
 
 class RegisterUser(BaseModel):
     name: str
     email: str
     password: str
-    phone_num: int
-    role: str
+    phone_num: str | None
+    role: str = "user"
 
     class Config:
         orm_mode = True
 
 
-class Drafts(BaseModel):
-    uid: int
+class CreateDrafts(BaseModel):
+    user_id: int
     content: str
-    publish: bool
-    doc_url: list
+    publish: bool = False
+    doc_url: List[str] | None = None
+    date_created: datetime
 
     class Config:
         orm_mode = True
 
 
-class SendMessages(BaseModel):
+class SendMessage(BaseModel):
     msg: str
     from_id: int
     to_id: int
-    time_stamp: str
-    doc: list
-
-    class Config:
-        orm_mode = True
+    docs: List[str] | None
+    sent_time: datetime
 
 
-class CreateInvoice(BaseModel):
-    from_uid: int
-    to_uid: int
-    paid: bool = False
+class UpdateUserInfo(BaseModel):
+    user_id: int
+    phone_num: str | None = None
+    profile_pic: str | None
 
-    class Config:
-        orm_mode = True
+
+class UpdateDraft(BaseModel):
+    daft_id: int
+    user_id: int
+    publish: bool = False
+    doc_url: dict | None
+    last_updated: datetime
