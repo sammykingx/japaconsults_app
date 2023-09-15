@@ -1,0 +1,46 @@
+.side-nav {
+  width: 150px;
+  height: 100vh;
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+  position: fixed;
+  left: 0px;
+  padding-top: 25px;
+}
+
+.side-nav h3 {
+  font-size: 17px;
+  padding-left: 10px;
+  padding-bottom: 10px;
+}
+
+.side-nav a {
+  display: flex;
+  align-items: center;
+  color: black;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 3px solid transparent;
+  transition: 0.5s ease-in-out;
+}
+
+.side-nav a:hover {
+  border-color: blue;
+  color: blue;
+  background-color: rgba(0, 0, 255, 0.1);
+}
+
+.side-nav a:hover svg {
+  color: blue;
+}
+
+.side-nav a:first-of-type {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.side-nav a svg {
+  font-size: 20px;
+}
+
+.side-nav a span {
+  margin-left: 10px;
+}
