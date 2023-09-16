@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from models.schema import RegisterUser
 from models.db_engine import get_db
@@ -16,34 +16,59 @@ all_user = {
 }
 
 
+def build_user_json(user: Dict) -> Dict[str, str | int]:
+    pass
+
+
 @router.get("/")
 async def get_users(db: Session = Depends(get_db)) -> List[Dict[str, str | int]]:
     """gets a list of all users in the user table"""
     users = db_crud.get_all(db, db_models.User)
+    if not resp:
+        return HTTPException(status_code=404, detail="no users in db")
     all_users = []
     if users:
         for user in users:
-            user_record = {"user_id": user.user_id, "email": user.email, "role": user.role}
+            user_record = {
+                "user_id": user.user_id,
+                "name": user.name,
+                "email": user.email,
+                "phone_num": user.phone_num,
+                "role": user.role,
+            }
             all_users.append(user_record)
-    return all_users if all_users else {"error": "no user in db"}
+    return all_users
 
 
 @router.get("/{uid}")
-async def get_user_by_id(uid: int, db: Session = Depends(get_db)):
+async def get_user_by_id(
+    uid: int, db: Session = Depends(get_db)
+) -> List[Dict[str, str | int]]:
     """gets a user details by desired specification
 
     @uid: The id of the user
     @user_email: email of the user
     @user_role: the role/ account type
     """
-    #data = all_user.get(user_id, None)
+    # data = all_user.get(user_id, None)
 
-    #user = db.query(db_models.User).filter(db_models.User.user_id==uid).first()
+    # user = db.query(db_models.User).filter(db_models.User.user_id==uid).first()
 
-    
     resp = db_crud.get_by(db, db_models.User, user_id=uid)
+    if not resp:
+        raise HTTPException(status_code=404, detail="no data found")
 
-    return resp if resp else {"error": "no user data"}
+    data = []
+    for field in resp:
+        temp = {
+            "user_id": field.user_id,
+            "name": field.name,
+            "email": field.email,
+            "phone_num": field.phone_num,
+            "role": field.role,
+        }
+        data.append(temp)
+    return data
 
 
 @router.post("/register")
@@ -52,14 +77,30 @@ async def reg_user(payload: RegisterUser, db: Session = Depends(get_db)):
     check if exception occurs too, taking too long to create etc.
     """
 
-    #user = db_models.User(**payload.dict())
-    #db.add(user)
-    #db.commit()
-    #db.refresh(user)
+    # user = db_models.User(**payload.dict())
+    # db.add(user)
+    # db.commit()
+    # db.refresh(user)
 
     # user_id = len(all_user) + 1
     # all_user.update({user_id: payload.dict()})
 
+    # return json/dict not list, work on that later
+
     db_crud.save(db, db_models.User, payload)
-    data = db_crud.get_by(db, db_models.User, email=payload.email)
+    resp = db_crud.get_by(db, db_models.User, email=payload.email)
+    if not resp:
+        raise HTTPException(status_code=400, detail="account exist")
+
+    data = {}
+    for field in resp:
+        temp = {
+            "user_id": field.user_id,
+            "name": field.name,
+            "email": field.email,
+            "phone_num": field.phone_num,
+            "role": field.role,
+        }
+        data.update(temp)
+
     return {"response": "account created", "details": data}
