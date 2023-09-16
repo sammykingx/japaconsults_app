@@ -19,9 +19,10 @@ def get_all(session: Session, table):
         data = session.query(table).all()
 
     except Exception as err:
-        raise HTTPException(status_code=500, details=err)
+        return None
 
     return data
+
 
 def get_by(session: Session, table, **kwargs):
     """Get specific data from a table in db based on **kwargs specified
@@ -35,8 +36,8 @@ def get_by(session: Session, table, **kwargs):
     try:
         data = session.query(table).filter_by(**kwargs).all()
 
-    except (DataError, NoResultFound) as err:
-        raise HTTPException(status_code=404, detail=err)
+    except Exception as err:
+        return None
 
     return data
 
@@ -56,10 +57,11 @@ def save(session: Session, db_table, record):
         session.refresh(data)
 
     except Exception as err:
-        raise HTTPException(status_code=500, detail=err)
+        return None
+
 
 #
-#def update(session: Session, db_table, **kwargs):
+# def update(session: Session, db_table, **kwargs):
 #    """upates a record in db table
 #
 #    @session: the request session object
