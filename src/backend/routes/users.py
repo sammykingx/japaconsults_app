@@ -21,10 +21,34 @@ def build_user_json(user: Dict) -> Dict[str, str | int]:
 
 
 @router.get("/")
-async def get_users(db: Session = Depends(get_db)) -> List[Dict[str, str | int]]:
-    """gets a list of all users in the user table"""
+async def get_users(uid: int | None = None, db: Session = Depends(get_db)) -> List[Dict[str, str | int]]:
+    """gets users in the user table
+
+    When no query is passed to the handler it gets all the users in the database.
+    when you pass a valid user_id, the user data is returned.
+    """
+
+    if uid:
+        resp = db_crud.get_by(db, db_models.User, user_id=uid)
+        if not resp:
+            raise HTTPException(status_code=404, detail="no data found")
+
+        data = []
+        for field in resp:
+            temp = {
+                    "user_id": field.user_id,
+                    "name": field.name,
+                    "email": field.email,
+                    "phone_num": field.phone_num,
+                    "role": field.role,
+            }
+            data.append(temp)
+
+        return data
+
     users = db_crud.get_all(db, db_models.User)
-    if not resp:
+
+    if not users:
         return HTTPException(status_code=404, detail="no users in db")
     all_users = []
     if users:
@@ -40,35 +64,35 @@ async def get_users(db: Session = Depends(get_db)) -> List[Dict[str, str | int]]
     return all_users
 
 
-@router.get("/{uid}")
-async def get_user_by_id(
-    uid: int, db: Session = Depends(get_db)
-) -> List[Dict[str, str | int]]:
-    """gets a user details by desired specification
+#@router.get("/{uid}")
+#async def get_user_by_id(
+#    uid: int, db: Session = Depends(get_db)
+#) -> List[Dict[str, str | int]]:
+#    """gets a user details by desired specification
+#
+#    @uid: The id of the user
+#    @user_email: email of the user
+#    @user_role: the role/ account type
+#    """
+#    # data = all_user.get(user_id, None)
+#
+#    # user = db.query(db_models.User).filter(db_models.User.user_id==uid).first()
 
-    @uid: The id of the user
-    @user_email: email of the user
-    @user_role: the role/ account type
-    """
-    # data = all_user.get(user_id, None)
-
-    # user = db.query(db_models.User).filter(db_models.User.user_id==uid).first()
-
-    resp = db_crud.get_by(db, db_models.User, user_id=uid)
-    if not resp:
-        raise HTTPException(status_code=404, detail="no data found")
-
-    data = []
-    for field in resp:
-        temp = {
-            "user_id": field.user_id,
-            "name": field.name,
-            "email": field.email,
-            "phone_num": field.phone_num,
-            "role": field.role,
-        }
-        data.append(temp)
-    return data
+#    resp = db_crud.get_by(db, db_models.User, user_id=uid)
+#    if not resp:
+#        raise HTTPException(status_code=404, detail="no data found")
+#
+#    data = []
+#    for field in resp:
+#       temp = {
+#            "user_id": field.user_id,
+#            "name": field.name,
+#            "email": field.email,
+#            "phone_num": field.phone_num,
+#            "role": field.role,
+#        }
+#        data.append(temp)
+#    return data
 
 
 @router.post("/register")
