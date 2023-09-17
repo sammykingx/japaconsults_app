@@ -2,17 +2,23 @@
 from fastapi import FastAPI
 from models.db_engine import Base, engine
 from models import db_models
-from routes import users, messages
+from routes import drafts, users, messages
 
 
-#Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(bind=engine)
 
 
 app = FastAPI()
 
 # register routes
+app.include_router(drafts.router)
 app.include_router(users.router)
 app.include_router(messages.router)
+
+
+@app.get("/", tags=["Index"])
+def index():
+    return {"status": "connection succesfull"}
 
 
 #if __name__ == "__main__":

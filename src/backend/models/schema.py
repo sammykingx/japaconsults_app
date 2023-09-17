@@ -1,11 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from typing import Dict, List
 from datetime import datetime
 
 
 class RegisterUser(BaseModel):
     name: str
-    email: str
+    email: EmailStr
     password: str
     phone_num: str | None
     role: str = "user"
@@ -45,3 +45,8 @@ class UpdateDraft(BaseModel):
     publish: bool = False
     doc_url: dict | None
     last_updated: datetime
+
+
+class LoginUser(BaseModel):
+    email: EmailStr
+    password: str
