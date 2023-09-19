@@ -22,7 +22,7 @@ class User(Base):
 
     name = Column(String(50), nullable=False)
     email = Column(String(30), index=True, unique=True, nullable=False)
-    password = Column(String(50), nullable=False)
+    password = Column(String(150), nullable=False)
     phone_num = Column(String(25))
     role = Column(String(20), nullable=False)
     #profile_pic = Column(String(30))

@@ -50,3 +50,14 @@ class UpdateDraft(BaseModel):
 class LoginUser(BaseModel):
     email: EmailStr
     password: str
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+
+
+class TokenData(BaseModel):
+    sub: int
+    name: str
+    role: str

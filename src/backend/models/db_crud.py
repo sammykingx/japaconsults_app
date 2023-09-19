@@ -50,7 +50,7 @@ def save(session: Session, db_table, record):
     @record: the data to save to table
     """
 
-    data = db_table(**record.dict())
+    data = db_table(**record)
     try:
         session.add(data)
         session.commit()
