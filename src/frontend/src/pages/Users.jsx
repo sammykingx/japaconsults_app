@@ -1,15 +1,14 @@
 import React, { useState } from "react";
 import "../css/Files.css";
 import { FaSearch } from "react-icons/fa";
-import { files } from "../data";
 import Search from "../components/Search";
 import { users } from "../data";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 import Upload from "../modals/Upload";
-import { BsFolder2 } from "react-icons/bs";
+import { Link } from "react-router-dom";
 
-const Files = () => {
-  const { query, results, handleInputChange } = Search(files);
+const Users = () => {
+  const { query, results, handleInputChange } = Search(users);
 
   const [modal, setModal] = useState(false);
   const handleModal = () => {
@@ -19,7 +18,7 @@ const Files = () => {
   return (
     <div className="files-container">
       <div className="left">
-        <h3>All Files</h3>
+        <h3>All Users</h3>
         <section className="search">
           <FaSearch />
           <input
@@ -31,15 +30,16 @@ const Files = () => {
         </section>
         <div className="files">
           {results.map((x) => (
-            <div className="file" key={x.id}>
-              <span>
-                <BsFolder2 />
-              </span>
-              <div>
-                <span>{x.filename}</span>
-                <span>{x.date}</span>
+            <Link to="" key={x.id}>
+              <img src={x.img} alt="" />
+              <div style={{ marginLeft: "10px" }}>
+                <span className="top">
+                  <span>{x.username}</span>
+                  <span>{x.time}</span>
+                </span>
+                <span className="msg">{x.msg}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
         {results.length === 0 && query !== "" && (
@@ -48,7 +48,7 @@ const Files = () => {
       </div>
       <div className="right">
         <div className="top">
-          <h3>File 1</h3>
+          <h3>ejovwogfreeman</h3>
           <AiOutlineCloudUpload onClick={handleModal} />
         </div>
         <div className="images">
@@ -62,4 +62,4 @@ const Files = () => {
   );
 };
 
-export default Files;
+export default Users;

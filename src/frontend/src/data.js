@@ -1,0 +1,203 @@
+import img from "./images/gb-profile.png";
+
+export let users = [
+  {
+    id: 1,
+    img: img,
+    username: "ejovwogfreeman",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+  },
+  {
+    id: 2,
+    img: img,
+    username: "Marksterling123",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+  {
+    id: 3,
+    img: img,
+    username: "johndoe27",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+  {
+    id: 4,
+    img: img,
+    username: "ejovwogfreeman",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+  },
+  {
+    id: 5,
+    img: img,
+    username: "Marksterling123",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+  {
+    id: 6,
+    img: img,
+    username: "johndoe27",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+  {
+    id: 7,
+    img: img,
+    username: "ejovwogfreeman",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+  },
+  {
+    id: 8,
+    img: img,
+    username: "Marksterling123",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+  {
+    id: 9,
+    img: img,
+    username: "johndoe27",
+    time: "11:17pm",
+    msg: "Lorem ipsum dolor sit amet",
+  },
+];
+
+export let chats = [
+  {
+    id: 1,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 2,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 3,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 4,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 5,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 6,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 7,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 8,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 9,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 10,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 11,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 12,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 13,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+  {
+    id: 14,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet lorem ipsum dolor sit amet",
+    type: "receiver",
+    time: "12:24pm",
+  },
+  {
+    id: 15,
+    username: "ejovwogfreeman",
+    msg: "lorem ipsum dolor sit amet",
+    type: "sender",
+    time: "12:24pm",
+  },
+];
+
+export let files = [
+  {
+    id: 1,
+    filename: "File 1",
+    date: "12/12/2023",
+  },
+  {
+    id: 2,
+    filename: "File 2",
+    date: "12/12/2023",
+  },
+  {
+    id: 3,
+    filename: "File 3",
+    date: "12/12/2023",
+  },
+  {
+    id: 4,
+    filename: "File 4",
+    date: "12/12/2023",
+  },
+  {
+    id: 5,
+    filename: "File 5",
+    date: "12/12/2023",
+  },
+];

@@ -6,9 +6,9 @@ import Search from "../components/Search";
 import { users } from "../data";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 import Upload from "../modals/Upload";
-import { BsFolder2 } from "react-icons/bs";
+import { LiaFileInvoiceDollarSolid } from "react-icons/lia";
 
-const Files = () => {
+const Invoice = () => {
   const { query, results, handleInputChange } = Search(files);
 
   const [modal, setModal] = useState(false);
@@ -19,7 +19,7 @@ const Files = () => {
   return (
     <div className="files-container">
       <div className="left">
-        <h3>All Files</h3>
+        <h3>All Invoices</h3>
         <section className="search">
           <FaSearch />
           <input
@@ -32,9 +32,7 @@ const Files = () => {
         <div className="files">
           {results.map((x) => (
             <div className="file" key={x.id}>
-              <span>
-                <BsFolder2 />
-              </span>
+              <span><LiaFileInvoiceDollarSolid/></span>
               <div>
                 <span>{x.filename}</span>
                 <span>{x.date}</span>
@@ -62,4 +60,4 @@ const Files = () => {
   );
 };
 
-export default Files;
+export default Invoice;

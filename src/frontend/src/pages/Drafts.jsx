@@ -9,12 +9,12 @@ import { BsSend } from "react-icons/bs";
 import { users, chats } from "../data";
 import Search from "../components/Search";
 
-const Message = () => {
+const Drafts = () => {
   const { query, results, handleInputChange } = Search(users);
   return (
     <div className="message-container">
       <div className="left">
-        <h3>All Messages</h3>
+        <h3>All Drafts</h3>
         <section className="search">
           <FaSearch />
           <input
@@ -79,26 +79,8 @@ const Message = () => {
           </button>
         </form>
       </div>
-      <div className="right">
-        <img src={img} alt="" />
-        <span>Ejovwo Godbless</span>
-        <span>@ejovwogfreeman</span> <br />
-        <p>lorem ipsum dolor sit amet lorem ipsum dolor sit amet</p>
-        <section>
-          <span>Name:</span>
-          <span>Ejovwo Godbless</span>
-        </section>
-        <section>
-          <span>Email :</span>
-          <span>ejovwogfreeman007@gmail.com</span>
-        </section>
-        <section>
-          <span>Daspan Joined :</span>
-          <span>12/12/2022</span>
-        </section>
-      </div>
     </div>
   );
 };
 
-export default Message;
+export default Drafts;

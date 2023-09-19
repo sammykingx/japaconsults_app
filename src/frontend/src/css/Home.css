@@ -1,0 +1,73 @@
+.dashboard-component {
+  height: 100vh;
+}
+
+.dashboard-component .top {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  background-color: white;
+  padding: 20px;
+}
+
+.dashboard-component .main {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  height: 520px;
+  padding: 20px;
+  padding-right: 200px;
+  overflow-y: scroll;
+}
+
+.dashboard-component .main .cards {
+  display: grid;
+  grid-gap: 20px;
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.dashboard-component .main .cards .card {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  border-radius: 5px;
+  height: 100px;
+}
+.dashboard-component .main .cards .card .info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dashboard-component .main .cards .card h3 {
+  font-size: 30px;
+}
+.dashboard-component .main .charts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+.dashboard-component .main .users {
+  padding-top: 20px;
+}
+.dashboard-component .main .users .user {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+.dashboard-component .main .users .user:first-of-type {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+  margin-top: 20px;
+}
+.dashboard-component .main .users .user:last-of-type {
+  border-bottom: 0px;
+}
+.dashboard-component .main .users .user img {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+}
+
+.dashboard-component .main .users .user div {
+  margin-left: 10px;
+}
+.dashboard-component .main .users .user span {
+  display: block;
+}

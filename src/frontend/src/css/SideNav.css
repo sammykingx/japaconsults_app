@@ -7,10 +7,8 @@
   padding-top: 25px;
 }
 
-.side-nav h3 {
-  font-size: 17px;
-  padding-left: 10px;
-  padding-bottom: 10px;
+.side-nav img {
+  margin-bottom: 7px;
 }
 
 .side-nav a {
@@ -24,13 +22,13 @@
 }
 
 .side-nav a:hover {
-  border-color: blue;
-  color: blue;
+  border-color: royalblue;
+  color: royalblue;
   background-color: rgba(0, 0, 255, 0.1);
 }
 
 .side-nav a:hover svg {
-  color: blue;
+  color: royalblue;
 }
 
 .side-nav a:first-of-type {
@@ -42,5 +40,38 @@
 }
 
 .side-nav a span {
+  margin-left: 10px;
+}
+
+.side-nav .logout {
+  display: flex;
+  align-items: center;
+  color: black;
+  padding: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 3px solid transparent;
+  transition: 0.5s ease-in-out;
+  cursor: pointer;
+}
+
+.side-nav .logout:hover {
+  border-color: royalblue;
+  color: royalblue;
+  background-color: rgba(0, 0, 255, 0.1);
+}
+
+.side-nav .logout:hover svg {
+  color: royalblue;
+}
+
+.side-nav .logout:first-of-type {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.side-nav .logout svg {
+  font-size: 20px;
+}
+
+.side-nav .logout span {
   margin-left: 10px;
 }
