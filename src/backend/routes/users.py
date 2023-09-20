@@ -16,37 +16,44 @@ all_user = {
 }
 
 
+def users_to_dict(user: db_models.User) -> dict:
+    """builds the user_json object"""
+
+    data = {
+        "user_id": user.user_id,
+        "name": user.name,
+        "email": user.email,
+        "phone_num": user.phone_num,
+        "role": user.role,
+    }
+    return data
+
+
+def dict_user_data(uid: int, db: Session) -> dict:
+    """takes a user record and returns an object of the user details"""
+
+    user = db.query(db_models.User).filter(db_models.User.user_id == uid).first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="no data found")
+
+    profile = {
+        "name": user.name,
+        "email": user.email,
+        "phone_num": user.phone_num,
+        "role": user.role,
+    }
+    return profile
+
+
 @router.get("/")
 async def get_users(
-    user: str = Depends(oauth2_users.verify_token),
-    db: Session = Depends(get_db),
-    uid: int | None = None
+    user: dict = Depends(oauth2_users.verify_token), db: Session = Depends(get_db)
 ) -> List[Dict[str, str | int]]:
-    """gets users in the user table
-
-    When no query is passed to the handler it gets all the users in the database.
-    when you pass a valid user_id, the user data is returned.
-    """
+    """gets all users in the user table"""
 
     if user["role"] != "manager":
-        raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Not allowed")
-
-    if uid:
-        #resp = db_crud.get_by(db, db_models.User, user_id=uid)
-        resp = db.query(db_models.User).filter(db_models.User.user_id == uid).first()
-        if not resp:
-            raise HTTPException(status_code=404, detail="no data found")
-
-        data = {
-                "user_id": resp.user_id,
-                "name": resp.name,
-                "email": resp.email,
-                "phone_num": resp.phone_num,
-                "role": resp.role,
-        }
-        return [data]
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
 
     users = db_crud.get_all(db, db_models.User)
 
@@ -55,75 +62,49 @@ async def get_users(
 
     all_users = []
     for user in users:
-        user_record = {
-                "user_id": user.user_id,
-                "name": user.name,
-                "email": user.email,
-                "phone_num": user.phone_num,
-                "role": user.role,
-            }
+        user_record = users_to_dict(user)
         all_users.append(user_record)
+
     return all_users
 
 
-# @router.get("/{uid}")
-# async def get_user_by_id(
-#    uid: int, db: Session = Depends(get_db)
-# ) -> List[Dict[str, str | int]]:
-#    """gets a user details by desired specification
-#
-#    @uid: The id of the user
-#    @user_email: email of the user
-#    @user_role: the role/ account type
-#    """
-#    # data = all_user.get(user_id, None)
-#
-#    # user = db.query(db_models.User).fi
+@router.get("/profile")
+async def user_profile(
+    token: dict = Depends(oauth2_users.verify_token), db: Session = Depends(get_db)
+) -> dict:
+    """return the users details"""
 
-@router.post("/register",
-        status_code=status.HTTP_201_CREATED,
-        response_model=schema.TokenResponse)
+    user_id = token["sub"]
+    profile = dict_user_data(user_id, db)
+    return profile
+
+
+@router.post(
+    "/register",
+    status_code=status.HTTP_201_CREATED,
+    response_model=schema.TokenResponse,
+)
 async def reg_user(payload: schema.RegisterUser, db: Session = Depends(get_db)):
-    """Adds a user to the database
-    check if exception occurs too, taking too long to create etc.
-    """
+    """Adds a user to the database"""
 
-    resp = db.query(db_models.User).filter(db_models.User.email==payload.email).first()
+    resp = (
+        db.query(db_models.User).filter(db_models.User.email == payload.email).first()
+    )
 
     if resp:
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT,
-                detail="User account exist")
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="User account exist"
+        )
 
     temp_data = payload.dict().copy()
 
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
-    
-    # i've done this in auth route, so a function utility should do this for
-    # me instead that can now be shared across project
+
     db_crud.save(db, db_models.User, temp_data)
-    record = db.query(db_models.User).filter(
-            db_models.User.email==payload.email).first()
+    record = (
+        db.query(db_models.User).filter(db_models.User.email == payload.email).first()
+    )
 
-   # user_data = {"sub": record.user_id,
-   #              "name": record.name,
-   #              "email": record.email,
-   #              "role": record.role}
-
-    #resp = db_crud.get_by(db, db_models.User, email=payload.email)
-    #if not resp:
-    #    raise HTTPException(status_code=400, detail="account exist")
-    #
-    #data = {}
-    #for field in resp:
-    #    temp = {
-    #        "user_id": field.user_id,
-    #        "name": field.name,
-    #        "email": field.email,
-    #        "phone_num": field.phone_num,
-    #        "role": field.role,
-    #    }
-    #    data.update(temp)
-
-    #return {"response": "account created", "details": data}
+    # return {"response": "account created", "details": data}
     token = oauth2_users.create_token(record)
     return {"access_token": token, "token_type": "Bearer"}
