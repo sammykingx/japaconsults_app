@@ -32,13 +32,6 @@ async def authenticate_user(
     if not password_hash.verify_pwd(form_data.password, user.password):
         raise credentials_exception
 
-#    data = {
-#        "sub": user.user_id,
-#        "name": user.name,
-#        "email": user.email,
-#        "role": user.role,
-#    }
-
     token = oauth2_users.create_token(user)
 
     return {"access_token": token, "token_type": "Bearer"}
