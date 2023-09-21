@@ -15,14 +15,15 @@ class RegisterUser(BaseModel):
 
 class CreateDrafts(BaseModel):
     content: str
-    publish: bool = False
     doc_url: list | None = None
     date_created: datetime
-    last_updated: datetime | None = None
 
 
-class UpdateDrafts(CreateDrafts, BaseModel):
+class UpdateDrafts(BaseModel):
     draft_id: int
+    content: str
+    doc_url: list
+    last_updated: datetime
 
 class SendMessage(BaseModel):
     msg: str

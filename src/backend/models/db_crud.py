@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 QUERY_EXCEPTION = HTTPException(
         status_code=status.HTTP_404_NOT_FOUND,
-        detail="No results found")
+        detail="No results found") 
 
 DB_EXCEPTION = HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -78,10 +78,11 @@ def update(col_id: int, session: Session, db_table, **kwargs):
 
     try:
         record = session.query(db_table).filter_by(**kwargs).first()
+
     except Exception as err:
         raise DB_EXCEPTION
 
-
+    ## not completed yet
 
 
 def delete(session: Session, db_table, **kwargs):
@@ -94,9 +95,19 @@ def delete(session: Session, db_table, **kwargs):
 
     try:
         resp = session.query(db_table).filter_by(**kwargs).first()
+       # session.delete(resp)
+       # session.commit()
+
+    except Exception as err:
+        # send a mail with the exception message
+        raise DB_EXCEPTION
+
+    if not resp:
+        raise QUERY_EXCEPTION
+
+    try:
         session.delete(resp)
         session.commit()
 
     except Exception as err:
-        # send a mail with the exception message
-        raise QUERY_EXCEPTION
+        raise DB_EXCEPTION
