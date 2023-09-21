@@ -1,44 +1,73 @@
-from fastapi import APIRouter, HTTPException
-from models import schema
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from models import db_crud, db_engine, db_models, schema
+from auth import oauth2_users
 
 
 router = APIRouter(prefix="/drafts", tags=["Drafts"])
 
 
-all_drafts = [
-    {
-        "user_id": 3,
-        "content": "demo content",
-        "publish": True,
-        "doc_url": ["/path/to/doc", "url/path/to/file"],
-        "date_created": "DD:MM:YY",
-    },
-    {
-        "user_id": 2,
-        "content": "the demo content",
-        "publish": False,
-        "doc_url": ["/doc/path"],
-        "date_created": "DD:MM:YY",
-    },
-]
+def build_drafts(record) -> dict:
+    """builds a dictionary object"""
+
+    draft = {"draft_id": record.draft_id,
+             "user_id": record.user_id,
+             "content": record.content,
+             "doc_url": [record.doc_url],
+             "date_created": record.date_created,
+             "last_updated": record.last_updated
+            }
+
+    return draft
 
 
 @router.get("/")
-async def get_all_drafts(draft_id: int | None = None):
-    """Gets all drafts from the database"""
+async def get_all_drafts(
+        token: dict = Depends(oauth2_users.verify_token),
+        db: Session = Depends(db_engine.get_db)):
+    """Gets all drafts by a user from the database"""
 
-    if not draft_id:
-        return all_drafts
+    resp = db_crud.get_by(db, db_models.Drafts, user_id=token["sub"])
+    if not resp:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="no drafts for user here")
 
-    if draft_id > len(all_drafts):
-        raise HTTPException(status_code=404, detail="no data found, add data")
+    draft = [build_drafts(draft) for draft in resp]
 
-    return all_drafts[draft_id]
+    return draft
 
 
-@router.post("/save", status_code=201)
-async def save_drafts(payload: schema.CreateDrafts):
-    """creates a drafts in databse"""
+@router.post("/save", status_code=status.HTTP_201_CREATED)
+async def save_drafts(
+        payload: schema.CreateDrafts,
+        user: dict = Depends(oauth2_users.verify_token),
+        db: Session = Depends(db_engine.get_db)):
+    """creates a drafts in database"""
 
-    all_drafts.append(payload.dict())
-    return {"details": "drafts created", "draft_id": len(all_drafts)}
+    draft = {"user_id": user["sub"]}
+    draft.update(payload.dict().copy())
+    db_crud.save(db, db_models.Drafts, draft)
+    return {"details": "drafts created"}
+
+
+@router.patch("/update", status_code=status.HTTP_200_OK)
+async def update_draft(
+        payload: schema.UpdateDrafts,
+        user: dict = Depends(oauth2_users.verify_token),
+        db: Session = Depends(db_engine.get_db)):
+    """Updates the drafts record for a particular user_id"""
+
+    temp = payload.dict().copy()
+    return {"details": "not implemented completly"}
+
+
+@router.delete("/delete", status_code=status.HTTP_200_OK)
+async def delete_draft(
+        d_id: int,
+        user: dict = Depends(oauth2_users.verify_token),
+        db: Session = Depends(db_engine.get_db)):
+    """deletes the drafts from the record"""
+
+    db_crud.delete(db, db_models.Drafts, draft_id=d_id)
+    return {"details": "Deleted"}
