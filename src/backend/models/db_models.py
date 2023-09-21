@@ -10,6 +10,7 @@ from sqlalchemy import (
         JSON
     )
 
+
 class User(Base):
     __tablename__ = "users"
 
@@ -25,7 +26,7 @@ class User(Base):
     password = Column(String(150), nullable=False)
     phone_num = Column(String(25))
     role = Column(String(20), nullable=False)
-    #profile_pic = Column(String(30))
+    profile_pic = Column(String(70))
 
     def __repr_(self):
         return "User({}, {}, {},{}, {}, {})".format(
@@ -55,7 +56,7 @@ class Drafts(Base):
     publish = Column(Boolean, default=False, nullable=False)
     doc_url = Column(JSON)
     date_created = Column(DateTime, nullable=False)
-    #last_updated = Column(DateTime)
+    last_updated = Column(DateTime)
 
     def __repr__(self):
         return "Drafts({}, {}, {}, {}, {}, {})".format(
@@ -85,7 +86,12 @@ class Messages(Base):
 
     def __repr__(self):
         return "Messages({},{}, {}, {}, {},{})".format(
-            self.msg_id, self.msg, self.from_id, self.to_id, self.doc, self.sent_time
+            self.msg_id,
+            self.msg,
+            self.from_id,
+            self.to_id,
+            self.doc,
+            self.sent_time
         )
 
     def __str__(self):
@@ -94,10 +100,13 @@ class Messages(Base):
         )
 
 
-#class Invoices(Base):
+# class Invoices(Base):
 #    __tablename__ = "invoices"
 #
-#    inv_id = Column(iInteger, primary_key=True, index=True, autoincrement=True)
+#    inv_id = Column(Integer,
+#                    primary_key=True,
+#                    index=True,
+#                    autoincrement=True)
 #    from_uid = Column(Integer)
 #    to_uid = Column(Integer)
 #    paid = Column(Boolean, default=False, nullable=True)
