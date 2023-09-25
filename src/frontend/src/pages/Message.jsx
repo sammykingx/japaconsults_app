@@ -93,7 +93,7 @@ const Message = () => {
           <span>ejovwogfreeman007@gmail.com</span>
         </section>
         <section>
-          <span>Daspan Joined :</span>
+          <span>Date Joined :</span>
           <span>12/12/2022</span>
         </section>
       </div>

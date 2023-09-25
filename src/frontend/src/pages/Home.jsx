@@ -4,8 +4,16 @@ import { FaUsers } from "react-icons/fa";
 import BarChart from "../components/BarCart";
 import PieChart from "../components/PieChart";
 import { users } from "../data";
+import img from "../images/gb-profile.png";
+import { Link, useNavigate } from "react-router-dom";
 
-const Home = () => {
+const Home = ({ user }) => {
+  const navigate = useNavigate();
+  const logoutUser = () => {
+    sessionStorage.removeItem("user");
+    navigate("/login");
+  };
+
   const cards = [
     { id: 1, icon: <FaUsers />, text: "Members", num: 55 },
     { id: 2, icon: <FaUsers />, text: "Members", num: 55 },
@@ -15,7 +23,19 @@ const Home = () => {
   return (
     <div className="dashboard-component">
       <div className="top">
-        <h2>Dashboard</h2>
+        <div>
+          <h2>Dashboard</h2>
+          <span>Welcome {user.name}</span>
+        </div>
+        <div className="profile-img">
+          <img src={img} alt="" />
+          <div className="account">
+            <Link>Account</Link>
+            <span className="a" onClick={logoutUser}>
+              Logout
+            </span>
+          </div>
+        </div>
       </div>
       <div className="main">
         <div className="cards">
@@ -36,7 +56,7 @@ const Home = () => {
         <div className="users">
           <h3>Users</h3>
           {users.map((x) => (
-            <div className="user">
+            <div className="user" key={Math.random()}>
               <img src={x.img} alt="" />
               <div>
                 <span>{x.username}</span>

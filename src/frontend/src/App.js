@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import SideNav from "./components/SideNav";
 import Home from "./pages/Home";
@@ -9,21 +9,59 @@ import SignIn from "./pages/SignIn";
 import Drafts from "./pages/Drafts";
 import Users from "./pages/Users";
 import Invoice from "./pages/Invoice";
-// import Search from "./components/Search";
+import Toastify from "./components/Toastify";
+import ProtectedRoutes from "./components/ProtectedRoutes";
 import "./App.css";
+// import jwt_decode from "jwt-decode";
 
 const App = () => {
+  const [user, setUser] = useState({});
+  var localUser = JSON.parse(sessionStorage.getItem("user"));
+  let token = localUser.access_token;
+
+  const getUser = async () => {
+    // Replace 'your_token_here' with the actual token value
+    const token_id = token;
+
+    // Create a Headers object and set the Authorization header
+    const headers = new Headers();
+    headers.append("Authorization", `Bearer ${token_id}`);
+
+    // Create the fetch request with the headers
+    const res = await fetch("http://test.sammykingx.tech/user/profile", {
+      method: "GET",
+      headers: headers,
+    });
+
+    const data = await res.json();
+    setUser(data);
+  };
+
+  getUser();
   return (
     <BrowserRouter>
+      <Toastify />
       <SideNav />
       <div className="main-component">
         <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/message" element={<Message />} />
-          <Route path="/drafts" element={<Drafts />} />
-          <Route path="/files" element={<Files />} />
-          <Route path="/users" element={<Users />} />
-          <Route path="/invoices" element={<Invoice />} />
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/" element={<Home user={user} />} />{" "}
+          </Route>
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/message" element={<Message />} />
+          </Route>
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/drafts" element={<Drafts />} />
+          </Route>
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/files" element={<Files />} />
+          </Route>
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/users" element={<Users />} />
+          </Route>
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/invoices" element={<Invoice />} />
+          </Route>
           <Route path="/register" element={<SignUp />} />
           <Route path="/login" element={<SignIn />} />
         </Routes>

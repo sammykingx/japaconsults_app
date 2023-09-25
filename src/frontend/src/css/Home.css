@@ -5,7 +5,47 @@
 .dashboard-component .top {
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   background-color: white;
-  padding: 20px;
+  padding: 10px;
+  padding-right: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.dashboard-component .top .profile-img img {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+}
+
+.dashboard-component .top .profile-img {
+  cursor: pointer;
+  position: relative;
+}
+
+.dashboard-component .top .profile-img:hover .account {
+  display: block;
+}
+
+.dashboard-component .top .profile-img .account {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  position: absolute;
+  background-color: white;
+  left: -20px;
+  bottom: -55px;
+  display: none;
+}
+.dashboard-component .top .profile-img .account a,
+.dashboard-component .top .profile-img .account .a {
+  display: block;
+  padding: 5px 15px;
+  color: black;
+  font-size: 15px;
+  text-align: center;
+}
+.dashboard-component .top .profile-img .account a:hover,
+.dashboard-component .top .profile-img .account .a:hover {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .dashboard-component .main {
@@ -71,3 +111,7 @@
 .dashboard-component .main .users .user span {
   display: block;
 }
+
+/* .profile-img{
+
+} */
