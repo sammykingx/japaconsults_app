@@ -1,0 +1,9 @@
+{"web":
+	{"client_id":"575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com",
+	"project_id":"learnsocirty",
+	"auth_uri":"https://accounts.google.com/o/oauth2/auth",
+	"token_uri":"https://oauth2.googleapis.com/token",
+	"auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs",
+	"client_secret":"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",
+	"redirect_uris":["http://localhost:5000/Oauth/google/callback"]}
+}

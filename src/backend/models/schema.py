@@ -1,5 +1,4 @@
 from pydantic import BaseModel, EmailStr
-from typing import Dict, List
 from datetime import datetime
 
 
@@ -14,22 +13,32 @@ class RegisterUser(BaseModel):
         orm_mode = True
 
 
-class CreateDrafts(BaseModel):
+class UserProfile:
     user_id: int
+    name: str
+    email: EmailStr
+    phone_num: str
+    role: str
+
+
+class CreateDrafts(BaseModel):
     content: str
-    publish: bool = False
-    doc_url: List[str] | None = None
+    doc_url: list | None = None
     date_created: datetime
 
-    class Config:
-        orm_mode = True
+
+class UpdateDrafts(BaseModel):
+    draft_id: int
+    content: str
+    doc_url: list
+    last_updated: datetime
 
 
 class SendMessage(BaseModel):
     msg: str
     from_id: int
     to_id: int
-    docs: List[str] | None
+    docs: list | None
     sent_time: datetime
 
 
