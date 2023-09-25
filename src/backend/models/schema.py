@@ -13,6 +13,14 @@ class RegisterUser(BaseModel):
         orm_mode = True
 
 
+class UserProfile:
+    user_id: int
+    name: str
+    email: EmailStr
+    phone_num: str
+    role: str
+
+
 class CreateDrafts(BaseModel):
     content: str
     doc_url: list | None = None
@@ -24,6 +32,7 @@ class UpdateDrafts(BaseModel):
     content: str
     doc_url: list
     last_updated: datetime
+
 
 class SendMessage(BaseModel):
     msg: str
