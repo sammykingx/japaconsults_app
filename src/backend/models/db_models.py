@@ -52,6 +52,7 @@ class Drafts(Base):
     )
 
     user_id = Column(Integer, index=True, nullable=False)
+    title = Column(String(250), nullable=False)
     content = Column(Text, nullable=False)
     publish = Column(Boolean, default=False, nullable=False)
     doc_url = Column(JSON)

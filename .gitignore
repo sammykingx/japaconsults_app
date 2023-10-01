@@ -1,3 +1,6 @@
 .env
+.bak
 venv/
 __pycache__/
+src/backend/*.sh
+src/backend/*.json
