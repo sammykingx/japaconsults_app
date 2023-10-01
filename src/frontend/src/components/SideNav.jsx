@@ -2,7 +2,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { AiOutlineHome } from "react-icons/ai";
 import { BsChatRightText, BsFolder2 } from "react-icons/bs";
-import { MdOutlineDrafts } from "react-icons/md";
+import { RiDraftLine } from "react-icons/ri";
 import { BiLogOutCircle } from "react-icons/bi";
 import { LiaFileInvoiceDollarSolid } from "react-icons/lia";
 import "../css/SideNav.css";
@@ -26,7 +26,7 @@ const SideNav = () => {
         <span>Messages</span>
       </Link>
       <Link to="/drafts">
-        <MdOutlineDrafts />
+        <RiDraftLine />
         <span>Drafts</span>
       </Link>
       <Link to="/files">

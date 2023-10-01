@@ -30,7 +30,7 @@ const Users = () => {
         </section>
         <div className="files">
           {results.map((x) => (
-            <Link to="" key={x.id}>
+            <Link to="" key={Math.random()}>
               <img src={x.img} alt="" />
               <div style={{ marginLeft: "10px" }}>
                 <span className="top">
@@ -53,7 +53,7 @@ const Users = () => {
         </div>
         <div className="images">
           {users.map((x) => (
-            <img src={x.img} alt="" />
+            <img src={x.img} alt="" key={Math.random()} />
           ))}
         </div>
         {modal && <Upload handleModal={handleModal} />}

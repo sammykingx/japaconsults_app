@@ -31,8 +31,10 @@ const Invoice = () => {
         </section>
         <div className="files">
           {results.map((x) => (
-            <div className="file" key={x.id}>
-              <span><LiaFileInvoiceDollarSolid/></span>
+            <div className="file" key={Math.random()}>
+              <span>
+                <LiaFileInvoiceDollarSolid />
+              </span>
               <div>
                 <span>{x.filename}</span>
                 <span>{x.date}</span>
@@ -51,7 +53,7 @@ const Invoice = () => {
         </div>
         <div className="images">
           {users.map((x) => (
-            <img src={x.img} alt="" />
+            <img src={x.img} alt="" key={Math.random()} />
           ))}
         </div>
         {modal && <Upload handleModal={handleModal} />}

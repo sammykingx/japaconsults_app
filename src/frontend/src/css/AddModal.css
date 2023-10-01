@@ -1,0 +1,62 @@
+.modal-form {
+  position: fixed;
+  top: 0px;
+  left: 0px;
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 1000000000;
+}
+
+.modal-form form {
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  width: 400px;
+  margin: 100px auto;
+  text-align: center;
+  padding: 20px;
+  border-radius: 5px;
+  color: black;
+}
+
+.modal-form form h3 {
+  font-size: 25px;
+  font-weight: bold;
+  margin: 10px 0px;
+}
+
+.modal-form form img {
+  margin-bottom: 20px;
+}
+
+.modal-form form div {
+  text-align: left;
+  margin-bottom: 12px;
+}
+
+.modal-form form div textarea {
+  display: block;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  outline: none;
+  width: 100%;
+  padding: 5px;
+  border-radius: 3px;
+  margin-top: 5px;
+}
+
+.modal-form form div button {
+  display: block;
+  border: 1px solid rgba(54, 45, 45, 0.1);
+  outline: none;
+  width: 100%;
+  padding: 8px;
+  border-radius: 3px;
+  margin-top: 5px;
+  cursor: pointer;
+  margin-top: 20px;
+  background-color: #432616;
+  color: white;
+}
+
+.modal-form svg {
+  color: black;
+}

@@ -21,6 +21,8 @@ const Search = (initialData) => {
           (item) =>
             (item.filename &&
               item.filename.toLowerCase().includes(query.toLowerCase())) ||
+            (item.content &&
+              item.content.toLowerCase().includes(query.toLowerCase())) ||
             (item.username &&
               item.username.toLowerCase().includes(query.toLowerCase()))
         )) ||

@@ -1,4 +1,4 @@
-// import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { FaSearch } from "react-icons/fa";
 import "../css/Messages.css";
@@ -11,6 +11,38 @@ import Search from "../components/Search";
 
 const Message = () => {
   const { query, results, handleInputChange } = Search(users);
+
+  const [message, setMessage] = useState("");
+  const [messageSaved, setMessageSaved] = useState(false);
+
+  // Load draft message from localStorage on component mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem("messageDraft");
+    if (savedDraft) {
+      setMessage(savedDraft);
+    }
+  }, []);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(message);
+
+    // Clear the draft message when the message is sent
+    setMessage("");
+    setMessageSaved(false);
+
+    // Remove draft from localStorage
+    localStorage.removeItem("messageDraft");
+  };
+
+  // Save draft message to localStorage whenever it changes
+  useEffect(() => {
+    if (message) {
+      localStorage.setItem("messageDraft", message);
+      setMessageSaved(true);
+    }
+  }, [message]);
+
   return (
     <div className="message-container">
       <div className="left">
@@ -58,7 +90,7 @@ const Message = () => {
           {chats.map((x) => (
             <div
               className={x.type === "sender" ? "chat sender" : "chat receiver"}
-              key={x.id}
+              key={Math.random()}
             >
               <div
                 className={
@@ -72,8 +104,14 @@ const Message = () => {
             </div>
           ))}
         </div>
-        <form action="">
-          <input type="text" placeholder="Type your message here..." />
+        <form onSubmit={handleSubmit}>
+          <input
+            type="text"
+            id="message"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder="Type your message here..."
+          />
           <button>
             <BsSend />
           </button>

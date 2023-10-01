@@ -12,32 +12,33 @@ import Invoice from "./pages/Invoice";
 import Toastify from "./components/Toastify";
 import ProtectedRoutes from "./components/ProtectedRoutes";
 import "./App.css";
-// import jwt_decode from "jwt-decode";
 
 const App = () => {
   const [user, setUser] = useState({});
   var localUser = JSON.parse(sessionStorage.getItem("user"));
-  let token = localUser.access_token;
+  let token;
+  if (localUser) {
+    token = localUser.access_token ? localUser.access_token : null;
+    const getUser = async () => {
+      // Replace 'your_token_here' with the actual token value
+      const token_id = token;
 
-  const getUser = async () => {
-    // Replace 'your_token_here' with the actual token value
-    const token_id = token;
+      // Create a Headers object and set the Authorization header
+      const headers = new Headers();
+      headers.append("Authorization", `Bearer ${token_id}`);
 
-    // Create a Headers object and set the Authorization header
-    const headers = new Headers();
-    headers.append("Authorization", `Bearer ${token_id}`);
+      // Create the fetch request with the headers
+      const res = await fetch("http://test.sammykingx.tech/user/profile", {
+        method: "GET",
+        headers: headers,
+      });
 
-    // Create the fetch request with the headers
-    const res = await fetch("http://test.sammykingx.tech/user/profile", {
-      method: "GET",
-      headers: headers,
-    });
+      const data = await res.json();
+      setUser(data);
+      getUser();
+    };
+  }
 
-    const data = await res.json();
-    setUser(data);
-  };
-
-  getUser();
   return (
     <BrowserRouter>
       <Toastify />
@@ -48,10 +49,10 @@ const App = () => {
             <Route path="/" element={<Home user={user} />} />{" "}
           </Route>
           <Route element={<ProtectedRoutes />}>
-            <Route path="/message" element={<Message />} />
+            <Route path="/message" element={<Message token={token} />} />
           </Route>
           <Route element={<ProtectedRoutes />}>
-            <Route path="/drafts" element={<Drafts />} />
+            <Route path="/drafts" element={<Drafts token={token} />} />
           </Route>
           <Route element={<ProtectedRoutes />}>
             <Route path="/files" element={<Files />} />

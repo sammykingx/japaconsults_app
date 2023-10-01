@@ -40,7 +40,7 @@ const Home = ({ user }) => {
       <div className="main">
         <div className="cards">
           {cards.map((x) => (
-            <div className="card" key={x.id}>
+            <div className="card" key={Math.random()}>
               <span className="info">
                 <span>{x.text}</span>
                 <FaUsers />
