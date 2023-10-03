@@ -35,7 +35,7 @@ def create_token(user) -> str:
     data = token_payload(user)
     dup_data = data.copy()
     iat = datetime.utcnow()
-    exp = datetime.utcnow() + timedelta(minutes=3)
+    exp = datetime.utcnow() + timedelta(minutes=30)
     dup_data.update({"iat": iat, "exp": exp})
 
     token = jwt.encode(dup_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))

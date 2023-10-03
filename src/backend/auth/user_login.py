@@ -68,7 +68,7 @@ async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     return {"details": "logout succesful"}
 
 
-@router.post("/google/me")
+@router.post("/google/me", include_in_schema=False)
 async def authenticate_with_google():
     """authenticates a user with google"""
 

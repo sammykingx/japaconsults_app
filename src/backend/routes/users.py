@@ -44,14 +44,15 @@ def dict_user_data(uid: int, db: Session) -> dict:
     return profile
 
 
-@router.get("/")
+@router.get("/",
+        summary="Gets all users from the database")
 async def get_users(
     user: dict = Depends(oauth2_users.verify_token), db: Session = Depends(get_db)
 ) -> List[Dict[str, str | int]]:
     """gets all users in the user table"""
 
     if user["role"] != "manager":
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="User Not allowed")
 
     users = db_crud.get_all(db, db_models.User)
 
@@ -104,11 +105,4 @@ async def reg_user(payload: schema.RegisterUser, db: Session = Depends(get_db)):
     db_crud.save(db, db_models.User, temp_data)
     message = "Welcome to japaconsults user Portal"
     email_notification.send_email(message, temp_data["email"], "WELCOME EMAIL")
-    #db_crud.save(db, db_models.User, temp_data)
-    # record = (
-    #     db.query(db_models.User).filter(db_models.User.email == payload.email).first()
-    # )
-
-    # token = oauth2_users.create_token(record)
-    # return {"access_token": token, "token_type": "Bearer"}
     return {"details": "user account created succefully"}
