@@ -7,8 +7,14 @@ import { LiaFileInvoiceDollarSolid } from "react-icons/lia";
 import "../css/SideNav.css";
 import logo from "../images/logo.png";
 import { FaUsers } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
 const SideNav = () => {
+  const navigate = useNavigate();
+  const logout = () => {
+    sessionStorage.removeItem("user");
+    navigate("/login");
+  };
   return (
     <ul className="side-nav">
       <img src={logo} alt="" width="140px" />
@@ -36,7 +42,7 @@ const SideNav = () => {
         <LiaFileInvoiceDollarSolid />
         <span>Invoice</span>
       </a>
-      <span className="logout">
+      <span className="logout" onClick={logout}>
         <BiLogOutCircle />
         <span>Logout</span>
       </span>

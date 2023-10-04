@@ -151,15 +151,17 @@ import { HiOutlineVideoCamera } from "react-icons/hi";
 import { BsSend } from "react-icons/bs";
 import { users, chats } from "../data";
 import Search from "../components/Search";
-import io from "socket.io-client"; // Import Socket.io
-
-// const socket = io("http://test.sammykingx.tech/messages"); // Replace with your Socket.io server URL
-// // const socket2 = io("http://test.sammykingx.tech/messages/send"); // Replace with your Socket.io server URL
+import io from "socket.io-client"; // Import Socket.io;
 
 const Message = ({ token }) => {
-  const socket = io("http://test.sammykingx.tech/messages", {
-    query: { token: `Bearer ${token}` }, // Pass the token as a query parameter
+  const headers = {
+    Authorization: `Bearer ${token}`,
+  };
+
+  const socket = io("http://test.sammykingx.tech/", {
+    headers,
   });
+
   const { query, results, handleInputChange } = Search(users);
 
   const [message, setMessage] = useState("");
@@ -168,6 +170,7 @@ const Message = ({ token }) => {
 
   useEffect(() => {
     // Listen for incoming messages
+    socket.on("connection", () => console.log("connected"));
     socket.on("message", (newMessage) => {
       setReceivedMessages((prevMessages) => [...prevMessages, newMessage]);
     });
