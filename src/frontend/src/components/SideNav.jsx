@@ -1,5 +1,4 @@
 import React from "react";
-import { Link } from "react-router-dom";
 import { AiOutlineHome } from "react-icons/ai";
 import { BsChatRightText, BsFolder2 } from "react-icons/bs";
 import { RiDraftLine } from "react-icons/ri";
@@ -13,30 +12,30 @@ const SideNav = () => {
   return (
     <ul className="side-nav">
       <img src={logo} alt="" width="140px" />
-      <Link to="/">
+      <a href="/">
         <AiOutlineHome />
         <span>Home</span>
-      </Link>
-      <Link to="/users">
+      </a>
+      <a href="/users">
         <FaUsers />
         <span>Users</span>
-      </Link>
-      <Link to="/message">
+      </a>
+      <a href="/message">
         <BsChatRightText />
         <span>Messages</span>
-      </Link>
-      <Link to="/drafts">
+      </a>
+      <a href="/drafts">
         <RiDraftLine />
         <span>Drafts</span>
-      </Link>
-      <Link to="/files">
+      </a>
+      <a href="/files">
         <BsFolder2 />
         <span>Files</span>
-      </Link>
-      <Link to="/invoices">
+      </a>
+      <a href="/invoices">
         <LiaFileInvoiceDollarSolid />
         <span>Invoice</span>
-      </Link>
+      </a>
       <span className="logout">
         <BiLogOutCircle />
         <span>Logout</span>

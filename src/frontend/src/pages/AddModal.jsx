@@ -1,32 +1,43 @@
 import React, { useState } from "react";
-// import logo from "../images/logo.png";
-// import { Link } from "react-router-dom";
 import "../css/AddModal.css";
 import axios from "axios";
 import { toast } from "react-toastify";
-import { useNavigate } from "react-router-dom";
 import { AiOutlineClose } from "react-icons/ai";
+import "react-draft-wysiwyg/dist/react-draft-wysiwyg.css";
+import { EditorState, convertToRaw } from "draft-js";
+import { Editor } from "react-draft-wysiwyg";
+import draftToHtml from "draftjs-to-html";
 
 const AddModal = ({ handleShowAddModal, token }) => {
-  const navigate = useNavigate();
-  const [content, setContent] = useState("");
-  const [isLoading, setIsLoading] = useState(false); // Added loading state
+  const [title, setTitle] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [editorState, setEditorState] = useState(EditorState.createEmpty());
 
-  const handleLogin = async (e) => {
-    setIsLoading(true);
+  const onEditorStateChange = (newEditorState) => {
+    setEditorState(newEditorState);
+  };
+
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
-    if (!content) {
+    setIsLoading(true);
+
+    if (!title || !editorState) {
+      setIsLoading(false);
       return toast.error("PLEASE FILL ALL FIELDS");
     }
 
     try {
-      let form = {
-        content: content,
+      const contentState = editorState.getCurrentContent();
+      const contentHTML = draftToHtml(convertToRaw(contentState));
+
+      const form = {
+        title: title,
+        content: contentHTML, // Pass the HTML content to the server
         date_created: new Date(),
       };
 
-      // Get the token from your session storage or wherever it's stored
-
+      console.log(form);
+      // Send the form data to your server
       const response = await axios.post(
         "http://test.sammykingx.tech/drafts/save",
         form,
@@ -45,28 +56,47 @@ const AddModal = ({ handleShowAddModal, token }) => {
       toast.error("DRAFT CREATION FAILED");
       console.error("Error creating draft:", error);
     } finally {
-      setIsLoading(false); // Set loading state back to false when the request is done
+      setIsLoading(false);
     }
   };
 
   return (
     <div className="modal-form">
-      <form onSubmit={handleLogin}>
+      <form onSubmit={handleFormSubmit}>
         <h3>CREATE DRAFT</h3>
         <AiOutlineClose onClick={handleShowAddModal} />
         <div>
-          <label htmlFor="content">Draft Content</label>
-          <textarea
-            id="content"
-            name="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+          <label htmlFor="title">Draft title</label>
+          <input
+            type="text"
+            id="title"
+            name="title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
           />
         </div>
         <div>
-          <button type="submit" disabled={isLoading}>
-            {isLoading ? "CREATING DRAFT..." : "CREATE DRAFT"}
-          </button>
+          <label htmlFor="content">Draft Content</label>
+          <div
+            style={{
+              border: "1px solid rgba(0,0,0,0.05)",
+              padding: "10px",
+              height: "300px",
+              marginTop: "10px",
+            }}
+          >
+            <Editor
+              editorState={editorState}
+              wrapperClassName="demo-wrapper"
+              editorClassName="demo-editor"
+              onEditorStateChange={onEditorStateChange}
+            />
+          </div>
+          <div>
+            <button type="submit" disabled={isLoading}>
+              {isLoading ? "CREATING DRAFT..." : "CREATE DRAFT"}
+            </button>
+          </div>
         </div>
       </form>
     </div>

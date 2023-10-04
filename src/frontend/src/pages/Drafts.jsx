@@ -324,7 +324,6 @@ const Drafts = ({ token }) => {
       {showAddModal && (
         <AddModal handleShowAddModal={handleShowAddModal} token={token} />
       )}
-
       {showUpdateModal && (
         <>
           {drafts.map(
@@ -359,7 +358,7 @@ const Drafts = ({ token }) => {
             onClick={() => handleDraftSelection(x)}
           >
             <span className="top">
-              <span>{x.content}</span>
+              <strong> {x.title}</strong>
             </span>
             <span className="msg">{x.date_created}</span>
           </div>
@@ -368,7 +367,6 @@ const Drafts = ({ token }) => {
           <div>No result for your search</div>
         )}
       </div>
-
       <div className="center">
         <div className="top">
           <div className="top-left">
@@ -394,7 +392,11 @@ const Drafts = ({ token }) => {
                 position: "relative",
               }}
             >
-              <span>{selectedDraft.content}</span>
+              <div
+                dangerouslySetInnerHTML={{
+                  __html: selectedDraft.content,
+                }}
+              />
               <small
                 style={{
                   position: "absolute",

@@ -10,7 +10,7 @@
 
 .modal-form form {
   border: 1px solid rgba(0, 0, 0, 0.1);
-  width: 400px;
+  width: 600px;
   margin: 100px auto;
   text-align: center;
   padding: 20px;
@@ -59,4 +59,8 @@
 
 .modal-form svg {
   color: black;
+}
+
+.demo-wrapper {
+  height: 150px;
 }
