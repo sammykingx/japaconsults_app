@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "japaconsults-cloud-storage",
+  "private_key_id": "2f3154903317996fe6d3ab7c8a79600318549706",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvwIBADANBgkqhkiG9w0BAQEFAASCBKkwggSlAgEAAoIBAQDgxEg7atBRfuTn\nClQligUrhdUgOsC4x1lV5+0CIPO0qX4UsWY05oFm73ySukaMLmX9SwbzaeuCJFG4\n3MpOHs23BL1xnn/+zbiKKI2XdQ2qxO88D1/jnvb4z1CN+XV/knjywjw641iA2moU\nWdybVBK5Xoh9l1PNGU8KSOS/AloEGso1QGGQQMgNXVtNV0D0pQ/uODPxvRYEeLHm\nvIH4Sw7r/WlnHhmSbgSV2zIAQT5cC8QDlGvKVVPmlsortDROAQHg9QJGrCL6VU7j\nye5VEcbxzRxOdlUyv8g9tX1HAycr3k4uimpxZTuo33HgGxBWdyp+h+8Ggho4nOl6\nMxNoJFhPAgMBAAECggEAYMPQDxh8p+E3/cmiEWk6sZKT/yScLNDSApxvGnACS4B+\nwbzf8h1cj2rCGE8uqRIeoW4IB4pNtEEbl7kiNYCocscNIhmpJBMABCbSUma35BGV\npyc9Unrw+4wRM5Y2gh4WiPibQoT26L5fVfSb95k52Gk83Mjl8JIZR6W7KQqDo2jw\neyE4OpcKUUW3URWi1gap6wpq7Xe/ua2zsfX5TIti16zVDrJktWjQcDsiamUKYvlf\nUib4LxuH2rhlk12I5sStEu0VM5M2rpy2dEA/o1r5CNNi4e5Zf7UTZbpmVijGNfPJ\n1arTWmL10gE83Ea17Ly4ND2NFf4txQVmIUadxfEVMQKBgQD5ZuM6uImmGJgUvAOJ\n0Psd5CupXKhCuLMObRc2Ha3+W0i99mYlgNyB+y/pp6jSIiQ0pAY0hs/TnXR+pjOq\n0WunieX36fK0axcR1yCr5jfsYqlhuJOX46VNutsW9pFPNfJZoL9vra9L890Fu6Xn\nIqJVuyMUrId4zum8l/dY146xXwKBgQDmtoyOhV9Nr9S8X5G23HFOO1BxKOzo8z+h\ngmLmU9q/EWC64y3nO0vo7tiuBZHzbrx9oCVkmRlwGLdfOfco23Z0fRDKXKXiszJ8\n5iEdatbtuCbdyFz4xCF8nQgVWQEgZnMKjqF22YUqTGzLiPHBHQ0p3NCuo+Wuq/mC\ns9D9THoPEQKBgQDIDFdHyq3epOuX9heAfDhxCYxcFQ6CNlSpxadQqQ3fcKkwdmwI\nuQwm1qzf5rPrmacg8lBn4ZriSvIehIH9Cm4nvNzRtr4PKbcfgEecmtVQrvLeh4cb\n1mXJq5ABI1X7C3KRofbsRYzOh5VJ+/JfK9C6o5jIBHvF03J47AxjHsQ+UQKBgQDD\nfQyuOq6dWg6NKwGCC1nqqvGnYMEVRf+1r5Bzj7v7SBNJZ/PeSW0xyyhIlCmuNjd6\nzvbAPcXDKP4/rxMRSJwfalWO0mAxLhvqnuiST5QcS3yLUhoNI8soFrrhs8/zjzuN\nR3vjA78FL0rET55hPmeIADXGtNOKZOf/arP73RBTsQKBgQDyRovx+vYITy5GbsDj\noCHpl5vsEbvTwO/k5ylOY6b1Fjqyo0ZPOBdLAbyO4xQd0WC/Q5mOUooi8g1fJAMl\nPAUYGdPYcsOG+CyxNIjzxFFsk3Mkf8yKNDjFftUkc6V+P8ZViO8cOgMyFlp4WO1P\nc8vM6Uvw4+fFE/FdFFy3AFuMmg==\n-----END PRIVATE KEY-----\n",
+  "client_email": "japa-app-storage@japaconsults-cloud-storage.iam.gserviceaccount.com",
+  "client_id": "108188017448762285574",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/japa-app-storage%40japaconsults-cloud-storage.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

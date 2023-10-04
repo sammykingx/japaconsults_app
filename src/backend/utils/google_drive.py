@@ -95,7 +95,7 @@ def file_permissions(drive, file):
         raise DRIVE_EXCEPTION
 
 
-def upload_file(fldr_id: str, file: File, mime_type: str):
+def upload_file(fldr_id: str, file: File, mime_type: str) -> str:
     """Uploads file to a folder existing on google drive"""
     
     from googleapiclient import http
@@ -114,7 +114,7 @@ def upload_file(fldr_id: str, file: File, mime_type: str):
         raise DRIVE_EXCEPTION
 
     print(file)
-    updated_file_rights = file_permissions(drive, blob["id"]
+    updated_file_rights = file_permissions(drive, blob["id"])
     print(updated_file_rights)
 
     return file["webViewLink"]
