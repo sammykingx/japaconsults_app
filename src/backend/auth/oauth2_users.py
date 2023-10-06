@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import EmailStr
-from models import db_engine
+from models import db_engine, db_models
 from typing import Annotated
 from sqlalchemy.orm import Session
 import jwt, os
@@ -24,11 +24,11 @@ load_dotenv()
 def is_user_verified(mail: EmailStr):
     """checks if the user email is verified"""
 
+    db = next(db_engine.get_db())
     try:
         user = db.query(db_models.User).filter_by(email=mail).first()
 
     except Exception as err:
-        print(err)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
@@ -36,7 +36,7 @@ def is_user_verified(mail: EmailStr):
 
     if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, details="email not verified"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not verified"
         )
     return True
 
@@ -95,7 +95,7 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
 
     except Exception as err:
         raise token_exception
-#    is_user_verified(data["email"])
+    is_user_verified(data["email"])
     return data
 
 

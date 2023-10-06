@@ -6,7 +6,7 @@ class RegisterUser(BaseModel):
     name: str
     email: EmailStr
     password: str
-    phone_num: str | None
+    phone_num: str = "+2347043215534"
     role: str = "user"
 
     class Config:
@@ -17,8 +17,8 @@ class UserProfile:
     user_id: int
     name: str
     email: EmailStr
-    phone_num: str
-    role: str
+    phone_num: str = "+23408078907654"
+    role: str = "user"
 
 
 class ChangeUserRole(BaseModel):

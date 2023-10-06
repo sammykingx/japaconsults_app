@@ -9,7 +9,7 @@ from auth import oauth2_users
 from typing import Annotated
 from google_auth_oauthlib.flow import Flow
 from dotenv import load_dotenv
-from pydantic import EmailStr
+from pydantic import BaseModel, EmailStr
 import jwt, pathlib, os
 
 
@@ -41,6 +41,32 @@ client_state = []
 INVALID_EMAIL_TOKEN = []
 
 
+def validate_email_token(token: str):
+    """checks if the email token received is still valid"""
+
+    if token in INVALID_EMAIL_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid user token"
+        )
+    load_dotenv()
+    try:
+        encoded_data = jwt.decode(
+            token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+        )
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="expired verification token",
+        )
+    except Exception as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid request credentials",
+        )
+    return encoded_data
+
+
 @router.post("/", response_model=schema.TokenResponse)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -64,12 +90,20 @@ async def authenticate_user(
 
     return {"access_token": token, "token_type": "Bearer"}
 
+# temp
+class SendMailToken(BaseModel):
+    email: EmailStr
 
-@router.post("/resend/emailToken")
-async def resend_email_token(
+
+@router.post(
+    "/send/emailToken",
+    summary="Sends email validation token to verify email",
+    description="Use this endpoint to generate tokens for forget password as well as email verification",
+)
+async def send_email_token(
     mail: EmailStr, db: Annotated[Session, Depends(db_engine.get_db)]
 ):
-    """resends email verification token to email address"""
+    """sends email verification token to email address"""
 
     try:
         user = db.query(db_models.User).filter_by(email=mail).first()
@@ -82,47 +116,32 @@ async def resend_email_token(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No account found"
         )
+    # token =
     return {"token": oauth2_users.email_verification_token(mail)}
 
 
+# temp
+class VerifyEmail(BaseModel):
+    token: str
+
+
 @router.post(
-    "/verify_mail",
+    "/verify_email",
     summary="verify user email",
     description="Verify's the user email provided",
 )
 async def verify_user_email(
-    token: str, db: Annotated[Session, Depends(db_engine.get_db)]
+    payload: VerifyEmail, db: Annotated[Session, Depends(db_engine.get_db)]
 ):
     """verify"s the user email address provided and updates user
     verification status to True
     """
 
-    if token in INVALID_EMAIL_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="token has ben invalidated"
-        )
-    load_dotenv()
-    try:
-        encoded_data = jwt.decode(
-            token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
-        )
-
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="expired verification token",
-        )
-    except Exception as err:
-        print(err)
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Could not verify user account, check back later",
-        )
-
+    encoded_data = validate_email_token(payload.token)
     try:
         user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
 
-        user.is_varified = True
+        user.is_verified = True
         db.commit()
         db.refresh(user)
 
@@ -131,7 +150,7 @@ async def verify_user_email(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
         )
-
+    INVALID_EMAIL_TOKEN.append(token.token)
     return {
         "details": "User account verified",
         "name": user.name,
@@ -139,7 +158,34 @@ async def verify_user_email(
     }
 
 
-@router.post("/logout")
+class ChangePassword(BaseModel):
+    token: str
+    new_pwd: str
+
+
+@router.post("/changePassword", summary="Changes the user password")
+async def change_user_password(
+    payload: ChangePassword, db: Annotated[Session, Depends(db_engine.get_db)]
+):
+    """Updates the user password"""
+
+    encoded_data = validate_email_token(payload.token)
+    try:
+        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
+        user.password = password_hash.hash_pwd(payload.new_pwd)
+        db.commit()
+        db.refresh(user)
+
+    except Exception as err:
+        raise HTTPExceotion(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server encountered some issues, check back later",
+        )
+    INVALID_EMAIL_TOKEN.append(payload.token)
+    return {"status": "succesful"}
+
+
+@router.post("/logout", summary="Invalidates the user token")
 async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     """revokes the user token"""
 
