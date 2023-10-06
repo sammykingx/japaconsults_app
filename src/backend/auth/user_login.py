@@ -8,6 +8,8 @@ from utils import password_hash
 from auth import oauth2_users
 from typing import Annotated
 from google_auth_oauthlib.flow import Flow
+from dotenv import load_dotenv
+from pydantic import EmailStr
 import jwt, pathlib, os
 
 
@@ -33,13 +35,16 @@ flow = Flow.from_client_secrets_file(
     ],
     redirect_uri=REDIRECT_URL,
 )
+
 client_state = []
+
+INVALID_EMAIL_TOKEN = []
 
 
 @router.post("/", response_model=schema.TokenResponse)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    db: Session = Depends(db_engine.get_db),
+    db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """authenticates a user based on details sent and returns a token"""
 
@@ -58,6 +63,80 @@ async def authenticate_user(
     token = oauth2_users.create_token(user)
 
     return {"access_token": token, "token_type": "Bearer"}
+
+
+@router.post("/resend/emailToken")
+async def resend_email_token(
+    mail: EmailStr, db: Annotated[Session, Depends(db_engine.get_db)]
+):
+    """resends email verification token to email address"""
+
+    try:
+        user = db.query(db_models.User).filter_by(email=mail).first()
+    except Exception:
+        raise HTTPExceotion(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server encountered some issues, check back later",
+        )
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="No account found"
+        )
+    return {"token": oauth2_users.email_verification_token(mail)}
+
+
+@router.post(
+    "/verify_mail",
+    summary="verify user email",
+    description="Verify's the user email provided",
+)
+async def verify_user_email(
+    token: str, db: Annotated[Session, Depends(db_engine.get_db)]
+):
+    """verify"s the user email address provided and updates user
+    verification status to True
+    """
+
+    if token in INVALID_EMAIL_TOKEN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="token has ben invalidated"
+        )
+    load_dotenv()
+    try:
+        encoded_data = jwt.decode(
+            token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+        )
+
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="expired verification token",
+        )
+    except Exception as err:
+        print(err)
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Could not verify user account, check back later",
+        )
+
+    try:
+        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
+
+        user.is_varified = True
+        db.commit()
+        db.refresh(user)
+
+    except Exception:
+        raise HTTPExceotion(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server encountered some issues, check back later",
+        )
+
+    return {
+        "details": "User account verified",
+        "name": user.name,
+        "is_verified": user.is_verified,
+    }
 
 
 @router.post("/logout")

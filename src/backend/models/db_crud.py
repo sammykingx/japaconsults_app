@@ -8,12 +8,14 @@ from sqlalchemy.orm import Session
 
 
 QUERY_EXCEPTION = HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
-        detail="No results found") 
+    status_code=status.HTTP_404_NOT_FOUND, detail="No results found"
+)
 
 DB_EXCEPTION = HTTPException(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Could not excecute command")
+    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    detail="Could not excecute command",
+)
+
 
 def get_all(session: Session, table):
     """Get all data from a table in database
@@ -86,7 +88,7 @@ def update(col_id: int, session: Session, db_table, **kwargs):
 
 
 def delete(session: Session, db_table, **kwargs):
-    """ Deletes a record from the db table that matches the column id
+    """Deletes a record from the db table that matches the column id
 
     @col_id: the column ID in the table to delete, must be unique
     @session: the request session object
@@ -95,8 +97,8 @@ def delete(session: Session, db_table, **kwargs):
 
     try:
         resp = session.query(db_table).filter_by(**kwargs).first()
-       # session.delete(resp)
-       # session.commit()
+    # session.delete(resp)
+    # session.commit()
 
     except Exception as err:
         # send a mail with the exception message

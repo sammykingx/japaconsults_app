@@ -21,16 +21,23 @@ class UserProfile:
     role: str
 
 
+class ChangeUserRole(BaseModel):
+    user_email: EmailStr
+    role: str
+
+
 class CreateDrafts(BaseModel):
+    title: str
     content: str
-    doc_url: list | None = None
+    # doc_url: list | None = None
     date_created: datetime
 
 
 class UpdateDrafts(BaseModel):
     draft_id: int
+    title: str
     content: str
-    doc_url: list
+    # doc_url: list
     last_updated: datetime
 
 

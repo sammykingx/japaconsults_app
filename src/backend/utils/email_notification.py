@@ -24,11 +24,11 @@ def send_email(message, to_addr, subject, attachment=None):
         os.getenv("SMTP_HOST"), os.getenv("SMTP_PORT"), timeout=15
     ) as mail_server:
         try:
-            #print("login into mail_Server")
+            # print("login into mail_Server")
             mail_server.login(os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD"))
-            #print("Login successfull, sending mail to user")
+            # print("Login successfull, sending mail to user")
             resp = mail_server.send_message(mail_msg)
-            #print("message sent to user")
+            # print("message sent to user")
 
         except smtplib.SMTPConnectError:
             print("could not connect to server")

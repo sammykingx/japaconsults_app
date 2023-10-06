@@ -1,14 +1,5 @@
 from .db_engine import Base
-from sqlalchemy import (
-        Column,
-        Integer,
-        String,
-        Boolean,
-        Text,
-        DateTime,
-        TIMESTAMP,
-        JSON
-    )
+from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, TIMESTAMP, JSON
 
 
 class User(Base):
@@ -27,6 +18,7 @@ class User(Base):
     phone_num = Column(String(25))
     role = Column(String(20), nullable=False)
     profile_pic = Column(String(70))
+    is_verified = Column(Boolean, default=False)
 
     def __repr_(self):
         return "User({}, {}, {},{}, {}, {})".format(
@@ -47,9 +39,7 @@ class User(Base):
 class Drafts(Base):
     __tablename__ = "drafts"
 
-    draft_id = Column(
-        Integer, primary_key=True, index=True, autoincrement=True
-    )
+    draft_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     user_id = Column(Integer, index=True, nullable=False)
     title = Column(String(250), nullable=False)
@@ -66,7 +56,7 @@ class Drafts(Base):
             self.content,
             self.publish,
             self.doc_url,
-            self.date_created
+            self.date_created,
         )
 
     def __str__(self):
@@ -87,12 +77,7 @@ class Messages(Base):
 
     def __repr__(self):
         return "Messages({},{}, {}, {}, {},{})".format(
-            self.msg_id,
-            self.msg,
-            self.from_id,
-            self.to_id,
-            self.doc,
-            self.sent_time
+            self.msg_id, self.msg, self.from_id, self.to_id, self.doc, self.sent_time
         )
 
     def __str__(self):

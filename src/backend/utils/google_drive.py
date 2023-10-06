@@ -4,9 +4,12 @@ from googleapiclient import errors
 
 
 DRIVE_EXCEPTION = HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="A network transport error occurred"
-    )
+    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    detail="A network transport error occurred",
+)
 
+
+# tested
 def create_drive_api():
     """creates the drive api client used in communicating with google srive api"""
 
@@ -16,17 +19,21 @@ def create_drive_api():
     import os, pathlib
 
     acc_json_file = os.path.join(pathlib.Path(__file__).parent, "japaconsults-gcs.json")
-    acc_cred = service_account.from_service_account_file(acc_json_file, scopes=["https://www.googleapis.com/auth/drive"])
+    acc_cred = service_account.Credentials.from_service_account_file(
+        acc_json_file, scopes=["https://www.googleapis.com/auth/drive"]
+    )
     try:
         drive_api = build("drive", "v3", credentials=acc_cred)
 
     except exceptions.MutualTLSChannelError:
         raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="failed to establish connection to 3rd party service"
-            )
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="failed to establish connection to 3rd party service",
+        )
     return drive_api
 
 
+# not tested
 def create_folder(folder: str, parent_id: str = None):
     """creates a folder in the google drive account
 
@@ -35,10 +42,7 @@ def create_folder(folder: str, parent_id: str = None):
     """
 
     drive = create_drive_api()
-    folder_metadata = {
-            "name": folder,
-            "mimeType": "application/vnd.google-apps.folder"
-        }
+    folder_metadata = {"name": folder, "mimeType": "application/vnd.google-apps.folder"}
     if parent_id:
         folder_metadata.update({"parents": [parent_id]})
 
@@ -52,6 +56,7 @@ def create_folder(folder: str, parent_id: str = None):
     return resp["id"]
 
 
+# not tested
 def folder_permission(action: str, folder_id: str, email: EmailStr):
     """creates permissions for an existing folder
 
@@ -61,60 +66,63 @@ def folder_permission(action: str, folder_id: str, email: EmailStr):
     """
 
     drive = create_drive_api()
-    permissions = {
-                    "type": "user",
-                    "role": "reader",
-                    "emailAddress": email
-        }
+    permissions = {"type": "user", "role": "reader", "emailAddress": email}
 
     if action == "create":
         try:
-            resp = drive.permissions().create(fileId=folder_id, body=permissions).execute()
+            resp = (
+                drive.permissions().create(fileId=folder_id, body=permissions).execute()
+            )
         except errors.HttpError:
             raise DRIVE_EXCEPTION
 
         return resp
 
     raise HTTPException(
-            status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Action type not allowed"
-        )
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Action type not allowed"
+    )
 
 
-def file_permissions(drive, file):
+# tested
+def file_permissions(drive, file_id):
     """set the permissions of the file to allow public view"""
 
-    file_rights = {
-            "type": "anyone",
-            "role": "reader"
-        }
+    file_rights = {"type": "anyone", "role": "reader"}
 
     try:
-        permission_resp = drive.permissions().create(fileId=file_id, body=file_rights).execute()
+        permission_resp = (
+            drive.permissions().create(fileId=file_id, body=file_rights).execute()
+        )
 
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
+    # save the file meta to db (file_id, viewlink, file_name, user_id)
+    return permission_resp
 
-def upload_file(fldr_id: str, file: File, mime_type: str) -> str:
+
+# tested
+def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
     """Uploads file to a folder existing on google drive"""
-    
+
     from googleapiclient import http
+    import io
 
     drive = create_drive_api()
-    file_metadata = {
-            "name": file.filename,
-            "parents": [fldr_id]
-        }
-
-    blob = http.MediaFileUpload(file.filename, mimetype=mime_type, resumable=True)
+    file_metadata = {"name": name, "parents": [fldr_id]}
+    blob = http.MediaIoBaseUpload(io.BytesIO(data), mimetype=mime_type, resumable=False)
     try:
-        file = drive.files().create(body=file_metadata, media_body=blob, fields="webViewLink").execute()
+        file = (
+            drive.files()
+            .create(body=file_metadata, media_body=blob, fields="id, webViewLink")
+            .execute()
+        )
 
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
     print(file)
-    updated_file_rights = file_permissions(drive, blob["id"])
+    updated_file_rights = file_permissions(drive, file["id"])
     print(updated_file_rights)
 
-    return file["webViewLink"]
+    return file
