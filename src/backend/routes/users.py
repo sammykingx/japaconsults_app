@@ -50,6 +50,20 @@ def dict_user_data(uid: int, db: Session) -> dict:
     return profile
 
 
+def check_user_payload(payload):
+    """checks if all payload data are in line with db limits"""
+
+    if len(payload.name) > 49:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="name should be less than 49 characters")
+
+    if len(payload.email) > 29:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="email length too long")
+
+
 # temp
 class AllUsersResponse(BaseModel):
     user_id: int
@@ -141,7 +155,7 @@ async def register_user(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid Phone number format",
         )
-
+    check_user_payload(payload)
     resp = (
         db.query(db_models.User).filter(db_models.User.email == payload.email).first()
     )

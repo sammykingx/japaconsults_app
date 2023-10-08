@@ -28,7 +28,7 @@ def build_drafts(record) -> dict:
     draft = {
         "draft_id": record.draft_id,
         "user_id": record.user_id,
-        "tile": record.title,
+        "title": record.title,
         "content": record.content,
         "date_created": record.date_created,
         "last_updated": record.last_updated,

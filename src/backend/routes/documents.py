@@ -1,12 +1,13 @@
 from fastapi import APIRouter, Depends, Form, HTTPException, status, UploadFile
+from sqlalchemy.orm import Session
 from auth import oauth2_users
+from models import db_engine, db_models, db_crud
 from utils import google_drive as gd
 from typing import Annotated, List
 from pydantic import BaseModel
-import requests as req
 
 
-FOLDERS = ("academics", "billing", "general", "messages")
+FOLDERS = ("academics", "billing", "general", "messages", "profile_pic")
 
 FILE_TYPES = (
     "image/png",
@@ -24,23 +25,48 @@ router = APIRouter(
     prefix="/documents",
     tags=["Documents"],
     responses={
-        200: {"description": "File upload successful"},
+        200: {"description": "Request successful"},
         413: {"description": "File 'file_name' too large"},
-        401: {"description": "Unathorized, user needs to be logged in"},
+        401: {"description": "Unathorized, user needs to be log in"},
         404: {"description": "Invalid destination folder"},
         415: {"description": "Unsurpported file format"},
+        500: {"description": "Could not execute command, check back later"}
     },
 )
 
 
+# temp
 class UploadDocuments(BaseModel):
     folder_name: str
     files: UploadFile
 
 
+# temp
 class UploadedFileResponse(BaseModel):
     file_name: str
     file_url: str
+
+
+# temp
+def file_serializer(record) -> dict:
+    return {
+            "file_id": record.file_id,
+            "name": record.name,
+            "folder": record.folder,
+            "file_url": record.file_url
+        }
+
+
+def get_user_files(db: Session, table, user) -> list[dict]:
+    try:
+        records = db.query(table).filter_by(owner_id=user).all()
+
+    except Exception:
+        raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Could not execute command, check back later")
+
+    return [file_serializer(record) for record in records]
 
 
 @router.post(
@@ -61,8 +87,10 @@ async def upload_documents(
 
     if folder_name not in FOLDERS:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Invalid destination folder"
-        )
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invalid destination folder"
+            )
+
     FILE_MAX_SIZE = 3145728
     if file.content_type not in FILE_TYPES:
         raise HTTPException(
@@ -81,6 +109,80 @@ async def upload_documents(
     )
 
     # save to db
-    file_resp = {"file_name": file.filename, "file_url": resp["webViewLink"]}
+    db_record = {
+            "file_id": resp["id"],
+            "name": file.filename,
+            "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
+            "owner_id": token["sub"],
+            "folder": folder
+        }
+    db_crud.save(db, db_models.Files, db_record)
+
+    file_resp = {
+        "file_name": file.filename,
+        "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
+    }
 
     return file_resp
+
+
+# temp
+class MyFiles(BaseModel):
+    file_id: str = "12wedfsxzcvbhjuy786tyrgf"
+    name: str = "file name"
+    file_url: str = "uri"
+    owner_id: int = 30
+    folder: str = "General"
+
+
+@router.get(
+        "/myfiles",
+        summary="Get all files uploaded by a user",
+        description="returns all files owned by currently logged in user",
+        response_model=list[MyFiles])
+async def my_files(
+        token: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]):
+    """returns all files uploaded by the user"""
+
+   # records = (
+   #         db.query(db_models.Files)
+   #         .filter_by(owner_id=token["sub"])
+   #         .all()
+   #     )
+#
+#    user_files = [file_serializer(record) for record in records]
+    user_files =  get_user_files(db, db_models.Files, token["sub"])
+    return user_files
+
+
+@router.get(
+    "/userfiles",
+    summary="gets all the files for a specific user",
+    response_model=MyFiles,
+)
+async def files_for(
+    uid: int,
+    token: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)]):
+    """returns all files uploaded by the user id"""
+#
+#    records = (
+#            db.query(db_models.Files)
+#            .filter_by(owner_id=uid)
+#            .all()
+#        )
+
+    user_files =  get_user_files(db, db_models.Files, token["sub"])
+    return user_files
+
+
+@router.delete("/removeFile", summary="Deletes a file from the cloud storage")
+async def remove_file(
+        file_id: str,
+        token: Annotated[dict, Depends(oauth2_users.verify_token)]
+    ):
+    """Deletes a file from cloud storage"""
+
+    gd.delete_files(file_id)
+    return {"detail": "file deleted successfully"}

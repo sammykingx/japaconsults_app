@@ -86,6 +86,23 @@ class Messages(Base):
         )
 
 
+#class Folders(Base):
+#    __tablename__ = "folders"
+#
+#    folder_id = Cloumn(String(50), index=True, unique=True, nullable=False)
+#    name = Column(String(20), index=True, unique=True, nullable=False)
+#    perm_id = Cloumn(String(50), index=True, unique=True, nullable=False)
+#    has_access = Cloumn(String(30), index=True, unique=True, nullable=False)
+
+
+class Files(Base):
+    __tablename__ = "files"
+
+    file_id = Column(String(50), primary_key=True, index=True, nullable=False)
+    name = Column(String(50), nullable=False)
+    file_url = Column(String(100), nullable=False)
+    owner_id = Column(String(30), nullable=False)
+    folder = Column(String(2), nullable=False)
 # class Invoices(Base):
 #    __tablename__ = "invoices"
 #

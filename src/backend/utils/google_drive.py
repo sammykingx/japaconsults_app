@@ -33,7 +33,7 @@ def create_drive_api():
     return drive_api
 
 
-# not tested
+# tested
 def create_folder(folder: str, parent_id: str = None):
     """creates a folder in the google drive account
 
@@ -53,6 +53,9 @@ def create_folder(folder: str, parent_id: str = None):
         raise DRIVE_EXCEPTION
 
     # save folder_id to db
+    print(resp["id"])
+    #perm = folder_permission("create", resp["id"], "sammykingx.tech@gmail.com")
+    #print(perm)
     return resp["id"]
 
 
@@ -66,14 +69,19 @@ def folder_permission(action: str, folder_id: str, email: EmailStr):
     """
 
     drive = create_drive_api()
-    permissions = {"type": "user", "role": "reader", "emailAddress": email}
+    permissions = {"role": "reader", "type": "user", "emailAddress": email}
 
     if action == "create":
         try:
             resp = (
-                drive.permissions().create(fileId=folder_id, body=permissions).execute()
+                drive.permissions()
+                .create(fileId=folder_id, body=permissions)
+                .execute()
             )
-        except errors.HttpError:
+        except errors.HttpError as err:
+            if err.resp.status == 400:
+                print(f"cannot share folder with {email}")
+                return -1
             raise DRIVE_EXCEPTION
 
         return resp
@@ -91,7 +99,9 @@ def file_permissions(drive, file_id):
 
     try:
         permission_resp = (
-            drive.permissions().create(fileId=file_id, body=file_rights).execute()
+            drive.permissions()
+            .create(fileId=file_id, body=file_rights)
+            .execute()
         )
 
     except errors.HttpError:
@@ -110,7 +120,9 @@ def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
 
     drive = create_drive_api()
     file_metadata = {"name": name, "parents": [fldr_id]}
-    blob = http.MediaIoBaseUpload(io.BytesIO(data), mimetype=mime_type, resumable=False)
+    blob = http.MediaIoBaseUpload(
+            io.BytesIO(data), mimetype=mime_type, resumable=False
+        )
     try:
         file = (
             drive.files()
@@ -126,3 +138,44 @@ def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
     print(updated_file_rights)
 
     return file
+
+
+# tested
+def list_files(folder: bool = False):
+    """list all files uploaded to cloud storage"""
+
+    drive = create_drive_api()
+    try:
+        if not folder:
+            # list all files and folders
+            files = drive.files().list().execute()
+
+        else:
+            # list only folders
+            files = (
+                    drive.files()
+                    .list(q="mimeType = 'application/vnd.google-apps.folder'")
+                    .execute()
+                )
+    except errors.HttpError:
+        raise DRIVE_EXCEPTION
+
+    print(files)
+    return files
+
+
+# tested
+def delete_files(file_id):
+    """delete file or folder with < file_id > from cloud storage"""
+
+    drive = create_drive_api()
+    try:
+        resp = drive.files().delete(fileId=file_id).execute()
+
+    except errors.HttpError as err:
+        if err.resp.status == 404:
+            raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="No matching files to delete")
+
+        raise DRIVE_EXCEPTION

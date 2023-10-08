@@ -46,7 +46,8 @@ def validate_email_token(token: str):
 
     if token in INVALID_EMAIL_TOKEN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Invalid user token"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Invalid email verification token"
         )
     load_dotenv()
     try:
@@ -139,18 +140,27 @@ async def verify_user_email(
 
     encoded_data = validate_email_token(payload.token)
     try:
-        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
+        user = (
+                db.query(db_models.User)
+                .filter_by(email=encoded_data["email"])
+                .first()
+            )
+        if user.is_verified:
+            raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail="User already Verified")
 
         user.is_verified = True
         db.commit()
         db.refresh(user)
 
     except Exception:
-        raise HTTPExceotion(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues, check back later",
+            detail="Server encountered some issues during verification, "\
+                   "check back later",
         )
-    INVALID_EMAIL_TOKEN.append(token.token)
+    INVALID_EMAIL_TOKEN.append(payload.token)
     return {
         "details": "User account verified",
         "name": user.name,
