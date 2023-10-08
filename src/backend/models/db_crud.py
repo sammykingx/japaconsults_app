@@ -65,6 +65,7 @@ def save(session: Session, db_table, record):
         session.refresh(data)
 
     except Exception as err:
+        print(err)
         # send yourself a mail here
         raise DB_EXCEPTION
 

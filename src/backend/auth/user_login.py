@@ -97,11 +97,11 @@ class SendMailToken(BaseModel):
 
 
 @router.post(
-    "/send/emailToken",
-    summary="Sends email validation token to verify email",
+    "/generate/emailToken",
+    summary="Generates email validation token to verify email",
     description="Use this endpoint to generate tokens for forget password as well as email verification",
 )
-async def send_email_token(
+async def generate_email_token(
     mail: EmailStr, db: Annotated[Session, Depends(db_engine.get_db)]
 ):
     """sends email verification token to email address"""
@@ -127,7 +127,7 @@ class VerifyEmail(BaseModel):
 
 
 @router.post(
-    "/verify_email",
+    "/verifyEmail",
     summary="verify user email",
     description="Verify's the user email provided",
 )

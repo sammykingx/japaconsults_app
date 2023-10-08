@@ -101,8 +101,8 @@ class Files(Base):
     file_id = Column(String(50), primary_key=True, index=True, nullable=False)
     name = Column(String(50), nullable=False)
     file_url = Column(String(100), nullable=False)
-    owner_id = Column(String(30), nullable=False)
-    folder = Column(String(2), nullable=False)
+    owner_id = Column(Integer, nullable=False)
+    folder = Column(String(50), nullable=False)
 # class Invoices(Base):
 #    __tablename__ = "invoices"
 #

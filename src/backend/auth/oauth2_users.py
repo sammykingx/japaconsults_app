@@ -12,7 +12,7 @@ import jwt, os
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
 
 # change the details to invalid token
-token_exception = HTTPException(
+TOKEN_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED, detail="token verification error"
 )
 
@@ -61,6 +61,7 @@ def token_payload(user) -> dict:
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "is_verified": user.is_verified
     }
     return payload
 
@@ -83,18 +84,23 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
 
     if token in REVOKED_TOKENS:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid User token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid access token"
         )
     try:
-        data = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+        data = jwt.decode(
+                token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+            )
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Token has expired"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="expired access token"
         )
 
     except Exception as err:
-        raise token_exception
+        raise TOKEN_EXCEPTION
+
     is_user_verified(data["email"])
     return data
 
@@ -104,8 +110,8 @@ def revoke_token(token: str = Depends(oauth2_scheme)) -> None:
 
     if token in REVOKED_TOKENS:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid User Token"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid access Token"
         )
 
     REVOKED_TOKENS.append(token)
-    # print(f"Revoked tokens: {REVOKED_TOKENS}")

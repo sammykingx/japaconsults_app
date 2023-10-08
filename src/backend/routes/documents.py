@@ -28,7 +28,7 @@ router = APIRouter(
         200: {"description": "Request successful"},
         413: {"description": "File 'file_name' too large"},
         401: {"description": "Unathorized, user needs to be log in"},
-        404: {"description": "Invalid destination folder"},
+        404: {"description": "File/Folder not found"},
         415: {"description": "Unsurpported file format"},
         500: {"description": "Could not execute command, check back later"}
     },
@@ -57,14 +57,17 @@ def file_serializer(record) -> dict:
         }
 
 
-def get_user_files(db: Session, table, user) -> list[dict]:
+def get_user_files(
+        db: Session,
+        table: db_models.Files,
+        user: int) -> list[dict]:
     try:
         records = db.query(table).filter_by(owner_id=user).all()
 
     except Exception:
         raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Could not execute command, check back later")
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="encountered some issues while processing request")
 
     return [file_serializer(record) for record in records]
 
@@ -82,7 +85,7 @@ async def upload_documents(
     file: UploadFile,
     # payload: UploadDocuments,
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
-):
+    db: Annotated[Session, Depends(db_engine.get_db)]):
     """Uploads document to google cloud storage"""
 
     if folder_name not in FOLDERS:
@@ -114,7 +117,7 @@ async def upload_documents(
             "name": file.filename,
             "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
             "owner_id": token["sub"],
-            "folder": folder
+            "folder": folder_name
         }
     db_crud.save(db, db_models.Files, db_record)
 
