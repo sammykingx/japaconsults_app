@@ -27,7 +27,7 @@ router = APIRouter(
     responses={
         200: {"description": "Request successful"},
         413: {"description": "File 'file_name' too large"},
-        401: {"description": "Unathorized, user needs to be log in"},
+        401: {"description": "Unauthorized access"},
         404: {"description": "File/Folder not found"},
         415: {"description": "Unsurpported file format"},
         500: {"description": "Could not execute command, check back later"}
@@ -61,13 +61,13 @@ def get_user_files(
         db: Session,
         table: db_models.Files,
         user: int) -> list[dict]:
-    try:
-        records = db.query(table).filter_by(owner_id=user).all()
 
-    except Exception:
+    records = db_crud.get_by(db, table, owner_id=user)
+    if not records:
         raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="encountered some issues while processing request")
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No files found for user"
+            )
 
     return [file_serializer(record) for record in records]
 
@@ -134,13 +134,12 @@ class MyFiles(BaseModel):
     file_id: str = "12wedfsxzcvbhjuy786tyrgf"
     name: str = "file name"
     file_url: str = "uri"
-    owner_id: int = 30
     folder: str = "General"
 
 
 @router.get(
         "/myfiles",
-        summary="Get all files uploaded by a user",
+        summary="Get all files uploaded by the active user",
         description="returns all files owned by currently logged in user",
         response_model=list[MyFiles])
 async def my_files(
@@ -148,44 +147,92 @@ async def my_files(
         db: Annotated[Session, Depends(db_engine.get_db)]):
     """returns all files uploaded by the user"""
 
-   # records = (
-   #         db.query(db_models.Files)
-   #         .filter_by(owner_id=token["sub"])
-   #         .all()
-   #     )
-#
-#    user_files = [file_serializer(record) for record in records]
-    user_files =  get_user_files(db, db_models.Files, token["sub"])
+    user_files = get_user_files(db, db_models.Files, token["sub"])
     return user_files
 
 
 @router.get(
     "/userfiles",
     summary="gets all the files for a specific user",
-    response_model=MyFiles,
+    response_model=list[MyFiles],
 )
 async def files_for(
-    uid: int,
+    user_id: int,
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)]):
     """returns all files uploaded by the user id"""
-#
-#    records = (
-#            db.query(db_models.Files)
-#            .filter_by(owner_id=uid)
-#            .all()
-#        )
 
-    user_files =  get_user_files(db, db_models.Files, token["sub"])
+    if token["role"] != "manager":
+        raise HTTPException(
+                status_code=401,
+                detail="Not Authtorized")
+
+    user_files =  get_user_files(db, db_models.Files, user_id)
     return user_files
 
 
-@router.delete("/removeFile", summary="Deletes a file from the cloud storage")
-async def remove_file(
-        file_id: str,
-        token: Annotated[dict, Depends(oauth2_users.verify_token)]
-    ):
-    """Deletes a file from cloud storage"""
+# temp
+class DeleteFile(BaseModel):
+    file_id: str = "fghjklouiytresdfcvbnk" 
+    file_name: str = "your_file.pdf"
+    status: str = "deleted"
 
-    gd.delete_files(file_id)
-    return {"detail": "file deleted successfully"}
+
+@router.delete("/removeMyFile",
+        summary="Deletes files owned by logged-in user",
+        description="Should be used by logged-in user in deleting files",
+        response_model=DeleteFile)
+async def remove_file(
+        fileId: str,
+        token: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]
+    ):
+    """Deletes a file owned by the active user from cloud storage"""
+
+    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
+    if not record:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No matching file found")
+
+    if record.owner_id != token["sub"]:
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="file not owned by active user")
+
+    db_crud.delete(db, db_models.Files, file_id=fileId)
+    print("no longer in db")
+    gd.delete_files(fileId)
+    return {"file_id": fileId,
+            "file_name": record.name,
+            "status": "Deleted"}
+
+
+@router.delete("/removeUserFile",
+        summary="removes files owned by a user",
+        description="Should be used by admin or managers in deleting "\
+                    "user files",
+        response_model=DeleteFile)
+async def remove_user_files(
+        fileId: str,
+        token: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]
+    ):
+    """deletes file for a user, to be used by managers or admin"""
+
+    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
+    if not record:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No file found for user")
+
+    if token["role"] != "manager":
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized user")
+
+    db_crud.delete(db, db_models.Files, file_id=fileId)
+    gd.delete_files(fileId)
+    return {"file_id": fileId,
+            "file_name": record.name,
+            "status": "Deleted"}

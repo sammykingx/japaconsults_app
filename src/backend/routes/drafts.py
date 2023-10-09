@@ -90,28 +90,26 @@ async def update_draft(
     """Updates the drafts record for a particular user_id"""
 
     temp = payload.dict().copy()
-    try:
-        draft = db.query(db_models.Drafts).filter_by(draft_id=temp["draft_id"]).first()
-
-    except Exception as err:
-        # send mail
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="oopsy !! could not execute this, try in 2hrs time",
+    note = db_crud.get_specific_record(
+            db, db_models.Drafts, draft_id=temp["draft_id"]
         )
-
-    if not draft:
+    if not note:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="no drafts found for user"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no notes found for user"
         )
-
-    draft.content = temp["content"]
-    # draft.doc_url = temp["doc_url"]
-    draft.last_updated = temp["last_updated"]
+    if note.user_id != user["sub"]:
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unauthorized acccess to resource"
+            )
+    note.title = temp["title"]
+    note.content = temp["content"]
+    note.last_updated = temp["last_updated"]
     db.commit()
-    db.refresh(draft)
+    db.refresh(note)
 
-    return {"details": "drafts updated"}
+    return {"details": "note updated"}
 
 
 @router.delete(

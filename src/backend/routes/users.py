@@ -87,7 +87,7 @@ async def get_users(
 
     if user["role"] != "manager":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="User Not allowed"
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authorized"
         )
 
     users = db_crud.get_all(db, db_models.User)

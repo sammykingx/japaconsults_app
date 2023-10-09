@@ -13,7 +13,7 @@ QUERY_EXCEPTION = HTTPException(
 
 DB_EXCEPTION = HTTPException(
     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-    detail="Could not excecute command, check back later",
+    detail="encountered some issues while processing request",
 )
 
 
@@ -48,6 +48,23 @@ def get_by(session: Session, table, **kwargs):
         raise DB_EXCEPTION
 
     return data
+
+
+def get_specific_record(session: Session, table, **kwargs):
+    """gets a specific record from the table
+
+    parameters:
+        @session: The db session
+        @table: the database table to query
+        @column: the specific column
+    """
+    try:
+        record = session.query(table).filter_by(**kwargs).first()
+
+    except Exception as err:
+        raise DB_EXCEPTION
+
+    return record
 
 
 def save(session: Session, db_table, record):
