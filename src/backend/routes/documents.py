@@ -81,7 +81,7 @@ def get_user_files(
     "/upload",
     summary="Takes a list of files and uploads to google cloud storage",
     description="folder_name should be the name of the folder to upload to "
-    "While the file should contain a list of file object."
+    "While the file should contain a list of file object.\n"
     "folder name: academics, billing,  general, messages.",
     response_model=UploadedFileResponse,
 )
@@ -146,10 +146,10 @@ async def upload_documents(
 
 # temp
 class MyFiles(BaseModel):
-    file_id: str = "12wedfsxzcvbhjuy786tyrgf"
-    name: str = "file name"
-    file_url: str = "uri"
-    folder: str = "General"
+    file_id: str
+    name: str
+    file_url: str
+    folder: str
 
 
 @router.get(
@@ -192,9 +192,9 @@ async def files_for(
 
 # temp
 class DeleteFile(BaseModel):
-    msg: str = "deleted"
-    file_id: str = "fghjklouiytresdfcvbnk"
-    file_name: str = "your_file.pdf"
+    msg: str
+    file_id: str
+    file_name: str
 
 
 @router.delete(
@@ -226,10 +226,9 @@ async def remove_file(
         )
 
     db_crud.delete(db, db_models.Files, file_id=fileId)
-    print("no longer in db")
     gd.delete_files(fileId)
     return {
-        "status": "Deleted",
+        "msg": "Deleted",
         "file_id": fileId,
         "file_name": record.name,
     }
@@ -276,5 +275,5 @@ async def remove_user_files(
     return {
         "file_id": fileId,
         "file_name": record.name,
-        "status": "Deleted",
+        "msg": "Deleted",
     }

@@ -99,8 +99,7 @@ class SendMailToken(BaseModel):
 
 # temp
 class ResponseToken(BaseModel):
-    token: str = "a jwt"
-    verv_url: str = "https://api.backend.com"
+    verv_url: str = "https://api.backend.com?token="
 
 
 @router.post(
@@ -119,26 +118,28 @@ async def generate_email_token(
 
     try:
         user = db.query(db_models.User).filter_by(email=mail).first()
-    except Exception:
+    except Exception as err:
+        print(f"error at generate_email => {err}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues, check back later",
+            detail="Server encountered some issues on email token "\
+                    "generation, check back later",
         )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="No account found",
+            detail="No user account found",
         )
     email_token = oauth2_users.email_verification_token(mail)
     verv_endpoint = "{}{}{}".format(
         req.url_for("verify_user_email"), "?token=", email_token
     )
-    return {"token": email_token, "verv_url": verv_endpoint}
+    return {"verv_url": verv_endpoint}
 
 
 # temp
 class VerifyEmail(BaseModel):
-    token: str = "users email token"
+    token: str
 
 
 @router.get(
@@ -164,6 +165,7 @@ async def verify_user_email(
             .first()
         )
     except Exception as err:
+        print(f"err at verify email => {err}")
         raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Server encountered some issues during verification, "
@@ -181,10 +183,11 @@ async def verify_user_email(
         db.refresh(user)
 
     except Exception as err:
+        print(f"err on saving new details => {err}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues during verification, "
-            "check back later",
+            "check back later or contact administrator",
         )
 #    INVALID_EMAIL_TOKEN.append(token)
     return {

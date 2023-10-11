@@ -147,9 +147,9 @@ def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
-    print(file)
+    #print(file)
     updated_file_rights = file_permissions(drive, file["id"])
-    print(updated_file_rights)
+    #print(updated_file_rights)
 
     return file
 

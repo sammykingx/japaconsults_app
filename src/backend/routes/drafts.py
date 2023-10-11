@@ -44,11 +44,15 @@ def build_received_notes(record: db_models.RecievedNotes) -> dict:
     return {
         "title": record.title,
         "content": record.content,
+        "sent_by": record.from_name,
         "sent_time": record.sent_time,
     }
 
 
-@router.get("/", summary="Gets all Notes created by the user")
+@router.get("/",
+        summary="Gets all Notes created by the active user",
+        description="Returns all notes created by the active user. "\
+                    "If no notes found it throws a 404 error")
 async def get_all_drafts(
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -71,6 +75,7 @@ async def get_all_drafts(
 class NotesResponse(BaseModel):
     title: str
     content: str
+    sent_by: str
     sent_time: datetime
 
 
@@ -119,16 +124,26 @@ async def send_notes(
     draft = db_crud.get_specific_record(
         db, db_models.Drafts, draft_id=payload.draftId
     )
+
     if not draft:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No notes found"
         )
+    to_user = db_crud.get_specific_record(
+            db, db_models.User, user_id=payload.toId
+    )
 
+    if not to_user:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"No user with ID '{payload.toId}' found"
+        )
     data = {
-        "from_id": user["sub"],
-        "to_id": payload.toId,
         "title": draft.title,
         "content": draft.content,
+        "from_id": user["sub"],
+        "from_name": user["name"],
+        "to_id": payload.toId,
         "sent_time": datetime.utcnow(),
     }
     db_crud.save(db, db_models.RecievedNotes, data)
@@ -170,7 +185,6 @@ async def save_drafts(
     }
     draft = {"user_id": user["sub"]}
     draft.update(data)
-    print(draft)
     db_crud.save(db, db_models.Drafts, draft)
     return {"msg": "note created"}
 
@@ -218,5 +232,15 @@ async def delete_draft(
 ):
     """deletes the drafts from the record"""
 
+    draft = db_crud.get_specific_record(db, db_models.Drafts, draft_id=d_id)
+    if not draft:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="no notes found to delete found")
+    if draft.user_id != user["sub"]:
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="note not owned by active user"
+        )
     db_crud.delete(db, db_models.Drafts, draft_id=d_id)
-    return {"details": "Deleted"}
+    return {"msg": "Deleted"}

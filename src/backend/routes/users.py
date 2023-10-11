@@ -82,16 +82,16 @@ class AllUsersResponse(BaseModel):
 
 @router.get(
     "/",
-    summary="Gets all users from the database",
-    description="This method is to be used by the manager not staffs or users.",
+    summary="Gets all verified accounts with role 'user'",
+    description="This method should not be used by users with role 'user'",
+    response_model=list[AllUsersResponse]
 )
 async def get_users(
     user: Annotated[dict, Depends(oauth2_users.verify_token)],
-    db: Annotated[Session, Depends(db_engine.get_db)],
-) -> List[Dict[str, str | int]]:
-    """gets all users in the user table"""
+    db: Annotated[Session, Depends(db_engine.get_db)]):
+    """gets all user role account in the user table"""
 
-    if user["role"] != "manager":
+    if user["role"] == "user":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not Authorized",
@@ -104,11 +104,63 @@ async def get_users(
 
     all_users = []
     for user in users:
-        if user.role != "manager":
+        if user.role not in ("admin", "staff", "manager"):
             user_record = users_to_dict(user)
             all_users.append(user_record)
 
     return all_users
+
+
+@router.get("/staffs",
+        summary="Returns all accounts of type 'staff'",
+        description="This endpoint allows you to get all account "\
+                    "with role 'staff'",
+        response_model=list[AllUsersResponse])
+async def all_staffs(
+        user: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]):
+    """get all staffs"""
+
+    records = db_crud.get_by(db, db_models.User, role="staff")
+    if not records:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, detail="No staff found"
+        )
+    return [users_to_dict(record) for record in records]
+
+
+@router.get("/managers",
+        summary="Returns all user accounts of role type 'manager'",
+        response_model=list[AllUsersResponse])
+async def all_managers(
+        user: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]):
+    """ get all managers"""
+
+    records = db_crud.get_by(db, db_models.User, role="manager")
+    if not records:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No managers found"
+            )
+    return [users_to_dict(record) for record in records]
+
+
+@router.get("/allAdmin",
+        summary="Returns all administrators",
+        response_model=list[AllUsersResponse])
+async def all_admins(
+        user: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)]):
+    """get all admins"""
+
+    records = db_crud.get_by(db, db_models.User, role="admin")
+    if not records:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No admin found"
+            )
+    return [users_to_dict(record) for record in records]
 
 
 # temp
@@ -139,7 +191,6 @@ async def user_profile(
 class UserRegistrationToken(BaseModel):
     msg: str
     status: str = "Unverified"
-    token: str
 
 
 @router.post(
@@ -184,18 +235,18 @@ async def register_user(
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
     db_crud.save(db, db_models.User, temp_data)
     token = oauth2_users.email_verification_token(payload.email)
-    message = "Welcome to japaconsults user Portal, click the link to verify email"
+    message = "Welcome to japaconsults user Portal, click the link "\
+              "to verify email"
     email_notification.send_email(
         message, temp_data["email"], "WELCOME EMAIL"
     )
     return {
         "msg": "user account created succefully",
-        "status": "Unverified",
-        "token": token,
+        "status": "Unverified"
     }
 
 
-@router.put("/change_role", summary="Updates the user profile")
+@router.patch("/change_role", summary="Updates the user profile")
 async def change_user_role(
     payload: schema.ChangeUserRole,
     user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -205,7 +256,7 @@ async def change_user_role(
     provided on the payload
     """
 
-    if user["role"] != "manager":
+    if user["role"] not in ("admin", "manager"):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not Authorized",
@@ -218,7 +269,7 @@ async def change_user_role(
         )
 
     try:
-        user = (
+        record = (
             db.query(db_models.User)
             .filter_by(email=payload.user_email)
             .first()
@@ -226,22 +277,26 @@ async def change_user_role(
 
     except Exception as err:
         # send mail
+        print(f"err in change role => {err}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="oopsy !! could not execute this, try in 2hrs time",
         )
-    if not user:
+    if not record:
         raise HTTPexception(
             status_code=status.HTTP_404_NOT_FOUND, detail="No user found"
         )
-
-    user.role = payload.role
+    if record.role == "manager" and user["role"] != "admin":
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=f"only admin can demote '{record.role}'")
+    record.role = payload.role
     db.commit()
-    db.refresh(user)
+    db.refresh(record)
     user_data = {
-        "user_id": user.user_id,
-        "name": user.name,
-        "email": user.email,
+        "user_id": record.user_id,
+        "name": record.name,
+        "email": record.email,
         "role": payload.role,
     }
-    return {"details": "role updated", "data": user_data}
+    return {"msg": "role updated", "data": user_data}

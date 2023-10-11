@@ -133,14 +133,17 @@ class RecievedNotes(Base):
     __tablename__ = "received_notes"
 
     ref_id = Column(Integer, primary_key=True, autoincrement=True)
-    from_id = Column(Integer)
+    title = Column(String(250))
+    content = Column(Text)
+    from_id = Column(Integer, nullable=False)
+    from_name = Column(String(50), nullable=False)
     to_id = Column(
             Integer,
             ForeignKey("users.user_id", ondelete="SET NULL"),
             index=True
         )
-    title = Column(String(250))
-    content = Column(Text)
+    #title = Column(String(250))
+    #content = Column(Text)
     sent_time = Column(DateTime)
 
     def __str__(self):

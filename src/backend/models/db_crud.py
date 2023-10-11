@@ -28,6 +28,7 @@ def get_all(session: Session, table):
         data = session.query(table).all()
 
     except Exception as err:
+        print(f"err at get_all => {err}")
         raise DB_EXCEPTION
 
     return data
@@ -45,6 +46,7 @@ def get_by(session: Session, table, **kwargs):
         data = session.query(table).filter_by(**kwargs).all()
 
     except Exception as err:
+        print(f"err at get_by => {err}")
         raise DB_EXCEPTION
 
     return data
@@ -62,6 +64,7 @@ def get_specific_record(session: Session, table, **kwargs):
         record = session.query(table).filter_by(**kwargs).first()
 
     except Exception as err:
+        print(f"err at get_spec => {err}")
         raise DB_EXCEPTION
 
     return record
@@ -82,7 +85,7 @@ def save(session: Session, db_table, record):
         session.refresh(data)
 
     except Exception as err:
-        print(err)
+        print(f"error in save => {err}")
         # send yourself a mail here
         raise DB_EXCEPTION
 
@@ -120,6 +123,7 @@ def delete(session: Session, db_table, **kwargs):
 
     except Exception as err:
         # send a mail with the exception message
+        print(f"err at delete => {err}")
         raise DB_EXCEPTION
 
     if not resp:
