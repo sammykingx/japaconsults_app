@@ -6,7 +6,14 @@ import os
 
 
 load_dotenv()
-engine = create_engine(os.getenv("DATABASE_URI"), pool_pre_ping=True, echo=False)
+engine = create_engine(
+    os.getenv("DATABASE_URI"),
+    pool_size=50,
+    max_overflow=30,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+    echo=False
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 

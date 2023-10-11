@@ -5,7 +5,8 @@ import os, smtplib
 
 
 MAIL_EXCEPTION = HTTPException(
-    status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Email service unavailble"
+    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+    detail="Email service unavailble",
 )
 
 
@@ -25,7 +26,9 @@ def send_email(message, to_addr, subject, attachment=None):
     ) as mail_server:
         try:
             # print("login into mail_Server")
-            mail_server.login(os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD"))
+            mail_server.login(
+                os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD")
+            )
             # print("Login successfull, sending mail to user")
             resp = mail_server.send_message(mail_msg)
             # print("message sent to user")

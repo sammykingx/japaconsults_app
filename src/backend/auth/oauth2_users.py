@@ -13,7 +13,8 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
 
 # change the details to invalid token
 TOKEN_EXCEPTION = HTTPException(
-    status_code=status.HTTP_401_UNAUTHORIZED, detail="token verification error"
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="token verification error",
 )
 
 REVOKED_TOKENS = []
@@ -36,7 +37,8 @@ def is_user_verified(mail: EmailStr):
 
     if not user.is_verified:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="User not verified"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not verified",
         )
     return True
 
@@ -49,7 +51,9 @@ def email_verification_token(email: EmailStr) -> str:
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(minutes=30),
     }
-    token = jwt.encode(user_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+    token = jwt.encode(
+        user_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+    )
     return token
 
 
@@ -61,7 +65,7 @@ def token_payload(user) -> dict:
         "name": user.name,
         "email": user.email,
         "role": user.role,
-        "is_verified": user.is_verified
+        "is_verified": user.is_verified,
     }
     return payload
 
@@ -75,7 +79,9 @@ def create_token(user) -> str:
     exp = datetime.utcnow() + timedelta(minutes=30)
     dup_data.update({"iat": iat, "exp": exp})
 
-    token = jwt.encode(dup_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+    token = jwt.encode(
+        dup_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+    )
     return token
 
 
@@ -85,17 +91,17 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
     if token in REVOKED_TOKENS:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access token"
+            detail="Invalid access token",
         )
     try:
         data = jwt.decode(
-                token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
-            )
+            token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+        )
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="expired access token"
+            detail="expired access token",
         )
 
     except Exception as err:
@@ -111,7 +117,7 @@ def revoke_token(token: str = Depends(oauth2_scheme)) -> None:
     if token in REVOKED_TOKENS:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid access Token"
+            detail="Invalid access Token",
         )
 
     REVOKED_TOKENS.append(token)

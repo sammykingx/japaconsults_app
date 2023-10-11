@@ -18,7 +18,9 @@ def create_drive_api():
     from google.auth import exceptions
     import os, pathlib
 
-    acc_json_file = os.path.join(pathlib.Path(__file__).parent, "japaconsults-gcs.json")
+    acc_json_file = os.path.join(
+        pathlib.Path(__file__).parent, "japaconsults-gcs.json"
+    )
     acc_cred = service_account.Credentials.from_service_account_file(
         acc_json_file, scopes=["https://www.googleapis.com/auth/drive"]
     )
@@ -42,20 +44,27 @@ def create_folder(folder: str, parent_id: str = None):
     """
 
     drive = create_drive_api()
-    folder_metadata = {"name": folder, "mimeType": "application/vnd.google-apps.folder"}
+    folder_metadata = {
+        "name": folder,
+        "mimeType": "application/vnd.google-apps.folder",
+    }
     if parent_id:
         folder_metadata.update({"parents": [parent_id]})
 
     try:
-        resp = drive.files().create(body=folder_metadata, fields="id").execute()
+        resp = (
+            drive.files()
+            .create(body=folder_metadata, fields="id")
+            .execute()
+        )
 
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
     # save folder_id to db
     print(resp["id"])
-    #perm = folder_permission("create", resp["id"], "sammykingx.tech@gmail.com")
-    #print(perm)
+    # perm = folder_permission("create", resp["id"], "sammykingx.tech@gmail.com")
+    # print(perm)
     return resp["id"]
 
 
@@ -87,7 +96,8 @@ def folder_permission(action: str, folder_id: str, email: EmailStr):
         return resp
 
     raise HTTPException(
-        status_code=status.HTTP_405_METHOD_NOT_ALLOWED, detail="Action type not allowed"
+        status_code=status.HTTP_405_METHOD_NOT_ALLOWED,
+        detail="Action type not allowed",
     )
 
 
@@ -121,12 +131,16 @@ def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
     drive = create_drive_api()
     file_metadata = {"name": name, "parents": [fldr_id]}
     blob = http.MediaIoBaseUpload(
-            io.BytesIO(data), mimetype=mime_type, resumable=False
-        )
+        io.BytesIO(data), mimetype=mime_type, resumable=False
+    )
     try:
         file = (
             drive.files()
-            .create(body=file_metadata, media_body=blob, fields="id, webViewLink")
+            .create(
+                body=file_metadata,
+                media_body=blob,
+                fields="id, webViewLink",
+            )
             .execute()
         )
 
@@ -153,10 +167,10 @@ def list_files(folder: bool = False):
         else:
             # list only folders
             files = (
-                    drive.files()
-                    .list(q="mimeType = 'application/vnd.google-apps.folder'")
-                    .execute()
-                )
+                drive.files()
+                .list(q="mimeType = 'application/vnd.google-apps.folder'")
+                .execute()
+            )
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
@@ -175,7 +189,8 @@ def delete_files(file_id):
     except errors.HttpError as err:
         if err.resp.status == 404:
             raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No matching files to delete")
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No matching files to delete",
+            )
 
         raise DRIVE_EXCEPTION

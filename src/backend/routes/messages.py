@@ -8,7 +8,11 @@ messages = [
     {
         "message_id_qwe": 1,
         "from_id": 23,
-        "from_details": {"sender": "John doe", "email": "me@me.com", "role": "user"},
+        "from_details": {
+            "sender": "John doe",
+            "email": "me@me.com",
+            "role": "user",
+        },
         "mesaage": "this is a demo message",
         "sent_time": "DD/MM/YYYY",
         "to_id": 2,
@@ -40,5 +44,7 @@ def get_messages(user: dict = Depends(oauth2_users.verify_token)):
 
 
 @router.post("/send")
-async def send_msg(payload: SendMessage = Depends(oauth2_users.verify_token)):
+async def send_msg(
+    payload: SendMessage = Depends(oauth2_users.verify_token),
+):
     return payload.dict()

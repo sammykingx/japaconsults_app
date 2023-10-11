@@ -32,7 +32,11 @@ def users_to_dict(user: db_models.User) -> dict:
 def dict_user_data(uid: int, db: Session) -> dict:
     """takes a user record and returns an object of the user details"""
 
-    user = db.query(db_models.User).filter(db_models.User.user_id == uid).first()
+    user = (
+        db.query(db_models.User)
+        .filter(db_models.User.user_id == uid)
+        .first()
+    )
 
     if not user:
         raise HTTPException(status_code=404, detail="no data found")
@@ -55,13 +59,15 @@ def check_user_payload(payload):
 
     if len(payload.name) > 49:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="name should be less than 49 characters")
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="name should be less than 49 characters",
+        )
 
     if len(payload.email) > 29:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="email length too long")
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="email length too long",
+        )
 
 
 # temp
@@ -87,7 +93,8 @@ async def get_users(
 
     if user["role"] != "manager":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authorized"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not Authorized",
         )
 
     users = db_crud.get_all(db, db_models.User)
@@ -130,7 +137,7 @@ async def user_profile(
 
 # temp
 class UserRegistrationToken(BaseModel):
-    details: str
+    msg: str
     status: str = "Unverified"
     token: str
 
@@ -138,17 +145,22 @@ class UserRegistrationToken(BaseModel):
 @router.post(
     "/register",
     status_code=status.HTTP_201_CREATED,
-    summary="creates a user in the database",
+    summary="creates an unverified user account",
+    description="Creates an unverified user account and returns a "\
+            "verification token users can use in verifying account on "\
+            "the 'verifyEmail' endpoint.",
     response_model=UserRegistrationToken,
 )
 async def register_user(
-    payload: schema.RegisterUser, db: Annotated[Session, Depends(db_engine.get_db)]
+    payload: schema.RegisterUser,
+    db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """Adds a user to the database"""
 
     if payload.role not in USER_ROLES:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="invalid user role"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="invalid user role",
         )
     if not verify_number.verify_phone_num(payload.phone_num):
         raise HTTPException(
@@ -157,12 +169,15 @@ async def register_user(
         )
     check_user_payload(payload)
     resp = (
-        db.query(db_models.User).filter(db_models.User.email == payload.email).first()
+        db.query(db_models.User)
+        .filter(db_models.User.email == payload.email)
+        .first()
     )
 
     if resp:
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail="email account exist"
+            status_code=status.HTTP_409_CONFLICT,
+            detail="email account exist",
         )
 
     temp_data = payload.dict().copy()
@@ -170,9 +185,11 @@ async def register_user(
     db_crud.save(db, db_models.User, temp_data)
     token = oauth2_users.email_verification_token(payload.email)
     message = "Welcome to japaconsults user Portal, click the link to verify email"
-    email_notification.send_email(message, temp_data["email"], "WELCOME EMAIL")
+    email_notification.send_email(
+        message, temp_data["email"], "WELCOME EMAIL"
+    )
     return {
-        "details": "user account created succefully",
+        "msg": "user account created succefully",
         "status": "Unverified",
         "token": token,
     }
@@ -190,16 +207,22 @@ async def change_user_role(
 
     if user["role"] != "manager":
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not Authorized"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not Authorized",
         )
 
     if payload.role not in ("staff", "user"):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid user role"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user role",
         )
 
     try:
-        user = db.query(db_models.User).filter_by(email=payload.user_email).first()
+        user = (
+            db.query(db_models.User)
+            .filter_by(email=payload.user_email)
+            .first()
+        )
 
     except Exception as err:
         # send mail

@@ -1,5 +1,15 @@
 from .db_engine import Base
-from sqlalchemy import Column, Integer, String, Boolean, Text, DateTime, TIMESTAMP, JSON
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Boolean,
+    Text,
+    DateTime,
+    TIMESTAMP,
+    JSON,
+    ForeignKey
+)
 
 
 class User(Base):
@@ -15,14 +25,13 @@ class User(Base):
     name = Column(String(50), nullable=False)
     email = Column(String(30), index=True, unique=True, nullable=False)
     password = Column(String(150), nullable=False)
-    phone_num = Column(String(25))
+    phone_num = Column(String(25), nullable=False)
     role = Column(String(20), nullable=False)
     profile_pic = Column(String(70))
     is_verified = Column(Boolean, default=False)
 
     def __repr_(self):
-        return "User({}, {}, {},{}, {}, {})".format(
-            self.user_id,
+        return "User({}, {},{}, {}, {})".format(
             self.name,
             self.email,
             self.password,
@@ -31,15 +40,17 @@ class User(Base):
         )
 
     def __str__(self):
-        return "name: {}, email: {}, phone_num: {}".format(
-            self.name, self.email, self.phone_num
+        return "name: {}, email: {}, phone_num: {}, role: {}".format(
+            self.name, self.email, self.phone_num, self.role
         )
 
 
 class Drafts(Base):
     __tablename__ = "drafts"
 
-    draft_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    draft_id = Column(
+        Integer, primary_key=True, index=True, autoincrement=True
+    )
 
     user_id = Column(Integer, index=True, nullable=False)
     title = Column(String(250), nullable=False)
@@ -50,8 +61,7 @@ class Drafts(Base):
     last_updated = Column(DateTime)
 
     def __repr__(self):
-        return "Drafts({}, {}, {}, {}, {}, {})".format(
-            self.draft_id,
+        return "Drafts({}, {}, {}, {}, {})".format(
             self.user_id,
             self.content,
             self.publish,
@@ -68,7 +78,9 @@ class Drafts(Base):
 class Messages(Base):
     __tablename__ = "messages"
 
-    msg_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    msg_id = Column(
+        Integer, primary_key=True, index=True, autoincrement=True
+    )
     msg = Column(Text, nullable=False)
     from_id = Column(Integer, nullable=False, index=True)
     to_id = Column(Integer, nullable=False)
@@ -76,8 +88,8 @@ class Messages(Base):
     sent_time = Column(TIMESTAMP, nullable=False)
 
     def __repr__(self):
-        return "Messages({},{}, {}, {}, {},{})".format(
-            self.msg_id, self.msg, self.from_id, self.to_id, self.doc, self.sent_time
+        return "Messages({}, {}, {}, {},{})".format(
+            self.msg, self.from_id, self.to_id, self.doc, self.sent_time
         )
 
     def __str__(self):
@@ -86,7 +98,7 @@ class Messages(Base):
         )
 
 
-#class Folders(Base):
+# class Folders(Base):
 #    __tablename__ = "folders"
 #
 #    folder_id = Cloumn(String(50), index=True, unique=True, nullable=False)
@@ -98,11 +110,49 @@ class Messages(Base):
 class Files(Base):
     __tablename__ = "files"
 
-    file_id = Column(String(50), primary_key=True, index=True, nullable=False)
+    file_id = Column(
+        String(50), primary_key=True, index=True, nullable=False
+    )
     name = Column(String(50), nullable=False)
     file_url = Column(String(100), nullable=False)
     owner_id = Column(Integer, nullable=False)
     folder = Column(String(50), nullable=False)
+
+    def __repr__(self):
+        return "Files({}, {}, {}. {})".format(
+            self.name, self.file_url, self.owner_id, self.folder
+        )
+
+    def __str__(self):
+        return "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
+            self.name, self.file_url, self.owner_id, self.folder
+        )
+
+
+class RecievedNotes(Base):
+    __tablename__ = "received_notes"
+
+    ref_id = Column(Integer, primary_key=True, autoincrement=True)
+    from_id = Column(Integer)
+    to_id = Column(
+            Integer,
+            ForeignKey("users.user_id", ondelete="SET NULL"),
+            index=True
+        )
+    title = Column(String(250))
+    content = Column(Text)
+    sent_time = Column(DateTime)
+
+    def __str__(self):
+        return "(title: {}, content: {}, from_id: {}, to_id: {}, sent_time: {})".format(
+            self.title,
+            self.content,
+            self.from_id,
+            self.to_id,
+            self.sent_time,
+        )
+
+
 # class Invoices(Base):
 #    __tablename__ = "invoices"
 #

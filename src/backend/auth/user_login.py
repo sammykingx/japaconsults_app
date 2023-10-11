@@ -15,19 +15,19 @@ import jwt, pathlib, os
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-credentials_exception = HTTPException(
+CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Invalid credentials"
 )
 
-GOOGLE_CLIENT_ID = (
-    "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
-)
+GOOGLE_CLIENT_ID = "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
 REDIRECT_URL = "http://localhost:5000/Oauth/google/callback"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 flow = Flow.from_client_secrets_file(
-    client_secrets_file=os.path.join(pathlib.Path(__file__).parent, "ls_OauthID.json"),
+    client_secrets_file=os.path.join(
+        pathlib.Path(__file__).parent, "ls_OauthID.json"
+    ),
     scopes=[
         "openid",
         "https://www.googleapis.com/auth/userinfo.profile",
@@ -47,7 +47,7 @@ def validate_email_token(token: str):
     if token in INVALID_EMAIL_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid email verification token"
+            detail="Invalid email verification token",
         )
     load_dotenv()
     try:
@@ -58,7 +58,7 @@ def validate_email_token(token: str):
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="expired verification token",
+            detail="expired email verification token",
         )
     except Exception as err:
         raise HTTPException(
@@ -82,88 +82,115 @@ async def authenticate_user(
     )
 
     if not user:
-        raise credentials_exception
+        raise CREDENTIALS_EXCEPTION
 
     if not password_hash.verify_pwd(form_data.password, user.password):
-        raise credentials_exception
+        raise CREDENTIALS_EXCEPTION
 
     token = oauth2_users.create_token(user)
 
     return {"access_token": token, "token_type": "Bearer"}
+
 
 # temp
 class SendMailToken(BaseModel):
     email: EmailStr
 
 
+# temp
+class ResponseToken(BaseModel):
+    token: str = "a jwt"
+    verv_url: str = "https://api.backend.com"
+
+
 @router.post(
     "/generate/emailToken",
-    summary="Generates email validation token to verify email",
-    description="Use this endpoint to generate tokens for forget password as well as email verification",
+    summary="Generates email verification token to verify email",
+    description="Use this endpoint to generate tokens for forget "
+    "password as well as email verification",
+    response_model=ResponseToken,
 )
 async def generate_email_token(
-    mail: EmailStr, db: Annotated[Session, Depends(db_engine.get_db)]
+    mail: EmailStr,
+    req: Request,
+    db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """sends email verification token to email address"""
+    """generate email verification token to email address"""
 
     try:
         user = db.query(db_models.User).filter_by(email=mail).first()
     except Exception:
-        raise HTTPExceotion(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
         )
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No account found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No account found",
         )
-    # token =
-    return {"token": oauth2_users.email_verification_token(mail)}
+    email_token = oauth2_users.email_verification_token(mail)
+    verv_endpoint = "{}{}{}".format(
+        req.url_for("verify_user_email"), "?token=", email_token
+    )
+    return {"token": email_token, "verv_url": verv_endpoint}
 
 
 # temp
 class VerifyEmail(BaseModel):
-    token: str
+    token: str = "users email token"
 
 
-@router.post(
+@router.get(
     "/verifyEmail",
     summary="verify user email",
     description="Verify's the user email provided",
 )
+# async def verify_user_email(
+#            payload: VerifyEmail, db: Annotated[Session, Depends(db_engine.get_db)]):
 async def verify_user_email(
-    payload: VerifyEmail, db: Annotated[Session, Depends(db_engine.get_db)]
+    token: str, db: Annotated[Session, Depends(db_engine.get_db)]
 ):
     """verify"s the user email address provided and updates user
     verification status to True
     """
 
-    encoded_data = validate_email_token(payload.token)
+    encoded_data = validate_email_token(token)
+    INVALID_EMAIL_TOKEN.append(token)
     try:
         user = (
-                db.query(db_models.User)
-                .filter_by(email=encoded_data["email"])
-                .first()
-            )
-        if user.is_verified:
-            raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT,
-                    detail="User already Verified")
+            db.query(db_models.User)
+            .filter_by(email=encoded_data["email"])
+            .first()
+        )
+    except Exception as err:
+        raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Server encountered some issues during verification, "
+                       "check back later"
+        )
 
-        user.is_verified = True
+    if user.is_verified:
+        raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already Verified",
+            )
+    user.is_verified = True
+    try:
         db.commit()
         db.refresh(user)
 
-    except Exception:
+    except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues during verification, "\
-                   "check back later",
+            detail="Server encountered some issues during verification, "
+            "check back later",
         )
-    INVALID_EMAIL_TOKEN.append(payload.token)
+#    INVALID_EMAIL_TOKEN.append(token)
     return {
-        "details": "User account verified",
+        "msg": "User account verified",
         "name": user.name,
+        "email": user.email,
         "is_verified": user.is_verified,
     }
 
@@ -173,26 +200,33 @@ class ChangePassword(BaseModel):
     new_pwd: str
 
 
-@router.post("/changePassword", summary="Changes the user password")
+@router.patch("/changePassword", summary="Changes the user password")
 async def change_user_password(
-    payload: ChangePassword, db: Annotated[Session, Depends(db_engine.get_db)]
+    payload: ChangePassword,
+    db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """Updates the user password"""
 
     encoded_data = validate_email_token(payload.token)
+    INVALID_EMAIL_TOKEN.append(payload.token)
     try:
-        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
+        user = (
+            db.query(db_models.User)
+            .filter_by(email=encoded_data["email"])
+            .first()
+        )
+
         user.password = password_hash.hash_pwd(payload.new_pwd)
         db.commit()
         db.refresh(user)
 
     except Exception as err:
-        raise HTTPExceotion(
+        raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
         )
-    INVALID_EMAIL_TOKEN.append(payload.token)
-    return {"status": "succesful"}
+#    INVALID_EMAIL_TOKEN.append(payload.token)
+    return {"msg": "succesful"}
 
 
 @router.post("/logout", summary="Invalidates the user token")
@@ -200,26 +234,31 @@ async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     """revokes the user token"""
 
     oauth2_users.revoke_token(token)
-    return {"details": "logout succesful"}
+    return {"msg": "logout succesful"}
 
 
-@router.post("/google/me", include_in_schema=False)
+@router.get("/google/me", include_in_schema=False)
 async def authenticate_with_google():
-    """authenticates a user with google"""
+    """get the authentication url from google"""
 
     auth_url, state = flow.authorization_url()
     client_state.append(state)
-    return RedirectResponse(auth_url)
+    return {"state": state, "auth_url": auth_url}
 
 
 @router.get("/Oauth/google/callback", include_in_schema=False)
 async def google_callback(req: Request):
     if req.query_params.get["state"] not in client_state:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detai="Invalid Request from client"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid Request from client",
         )
+    print("aster")
     flow.fetch_token(authorization_response=req.url)
     credentials = flow.credentials
-    user_info = jwt.decode(credentials.id_token, options={"verify_signature": False})
+    print(f"credentals {credentials}")
+    user_info = jwt.decode(
+        credentials.id_token, options={"verify_signature": False}
+    )
     print(user_info)
-    return {"details": "not fully implemeted yet"}
+    return {"msg": "not fully implemeted yet"}
