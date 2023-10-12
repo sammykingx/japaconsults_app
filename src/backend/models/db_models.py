@@ -27,7 +27,7 @@ class User(Base):
     password = Column(String(150), nullable=False)
     phone_num = Column(String(25), nullable=False)
     role = Column(String(20), nullable=False)
-    profile_pic = Column(String(70))
+    profile_pic = Column(String(100))
     is_verified = Column(Boolean, default=False)
 
     def __repr_(self):

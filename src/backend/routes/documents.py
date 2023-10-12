@@ -9,7 +9,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_models, db_crud
-from utils import google_drive as gd
+from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
 
@@ -119,7 +119,7 @@ async def upload_documents(
             detail=f"File '{file.filename}' too large",
         )
 
-    resp = gd.upload_file(
+    resp = cloud.upload_file(
         "1D8rZ7oNDzwBlrOTEiqyrLDRpfb0unzhQ",
         file.filename,
         data,

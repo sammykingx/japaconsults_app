@@ -65,6 +65,7 @@ def token_payload(user) -> dict:
         "name": user.name,
         "email": user.email,
         "role": user.role,
+        "img": user.profile_pic,
         "is_verified": user.is_verified,
     }
     return payload
