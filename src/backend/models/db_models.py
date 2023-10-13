@@ -8,7 +8,9 @@ from sqlalchemy import (
     DateTime,
     TIMESTAMP,
     JSON,
-    ForeignKey
+    ForeignKey,
+    Date,
+    Numeric,
 )
 
 
@@ -124,8 +126,10 @@ class Files(Base):
         )
 
     def __str__(self):
-        return "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
-            self.name, self.file_url, self.owner_id, self.folder
+        return (
+            "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
+                self.name, self.file_url, self.owner_id, self.folder
+            )
         )
 
 
@@ -138,12 +142,10 @@ class RecievedNotes(Base):
     from_id = Column(Integer, nullable=False)
     from_name = Column(String(50), nullable=False)
     to_id = Column(
-            Integer,
-            ForeignKey("users.user_id", ondelete="SET NULL"),
-            index=True
-        )
-    #title = Column(String(250))
-    #content = Column(Text)
+        Integer,
+        ForeignKey("users.user_id", ondelete="SET NULL"),
+        index=True,
+    )
     sent_time = Column(DateTime)
 
     def __str__(self):
@@ -156,23 +158,32 @@ class RecievedNotes(Base):
         )
 
 
-# class Invoices(Base):
-#    __tablename__ = "invoices"
-#
-#    inv_id = Column(Integer,
-#                    primary_key=True,
-#                    index=True,
-#                    autoincrement=True)
-#    from_uid = Column(Integer)
-#    to_uid = Column(Integer)
-#    paid = Column(Boolean, default=False, nullable=True)
-#
-#    def __repr__(self):
-#        return "Invoices({}, {}, {}, {})".format(
-#            self.inv_id, self.from_uid, self.to_uid, self.paid
-#        )
-#
-#    def __str__(self):
-#        return "(inv_id: {}, from_user: {}, to_user: {}, paid: {})".format(
-#            self.inv_id, self.from_uid, self.to_uid, self.paid
-#        )
+class Invoices(Base):
+    __tablename__ = "invoices"
+
+    inv_id = Column(String(16), primary_key=True, index=True)
+    title = Column(String(50), nullable=False)
+    desc = Column(String(100), nullable=False)
+    price = Column(Numeric(precision=15, scale=2), nullable=False)
+    to_email = Column(String(30), nullable=False)
+    created_at = Column(Datetime, nullable=False)
+    created_by = Column(String(50), nullable=False)
+    due_date = Column(Date, nullable=False)
+    updated_at = Column(Datetime)
+    updated_by = Column(String(50))
+    paid = Column(Boolean, default=False)
+    paid_at = Column(Datetime)
+
+    def __str__(self):
+        return (
+            "(inv_id: {}, tile: {}, created_by: {}, to_user: {}, "
+            "price: {}, due_date: {}, paid: {})".format(
+                self.inv_id,
+                self.title,
+                self.created_by,
+                self.to_email,
+                self.price,
+                self.due_date,
+                self.paid,
+            )
+        )

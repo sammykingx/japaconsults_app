@@ -99,7 +99,7 @@ class SendMailToken(BaseModel):
 
 # temp
 class ResponseToken(BaseModel):
-    verv_url: str = "https://api.backend.com?token="
+    token: str
 
 
 @router.post(
@@ -134,7 +134,7 @@ async def generate_email_token(
     verv_endpoint = "{}{}{}".format(
         req.url_for("verify_user_email"), "?token=", email_token
     )
-    return {"verv_url": verv_endpoint}
+    return {"token": email_token}
 
 
 # temp
@@ -189,7 +189,6 @@ async def verify_user_email(
             detail="Server encountered some issues during verification, "
             "check back later or contact administrator",
         )
-#    INVALID_EMAIL_TOKEN.append(token)
     return {
         "msg": "User account verified",
         "name": user.name,

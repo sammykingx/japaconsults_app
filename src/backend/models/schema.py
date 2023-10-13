@@ -1,16 +1,15 @@
-from pydantic import BaseModel, EmailStr
-from datetime import datetime
+from pydantic import ConfigDict, BaseModel, EmailStr
+from datetime import date, datetime
 
 
 class RegisterUser(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     email: EmailStr
     password: str
     phone_num: str = "+2347043215534"
     role: str = "user"
-
-    class Config:
-        orm_mode = True
 
 
 class UserProfile:
@@ -37,8 +36,17 @@ class UpdateDrafts(BaseModel):
     draft_id: int
     title: str
     content: str
-    # doc_url: list
     last_updated: datetime
+
+
+class CreateInvoice(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    title = str
+    desc: str
+    price: float
+    to_email: EmailStr | None
+    due_date: date
 
 
 class SendMessage(BaseModel):

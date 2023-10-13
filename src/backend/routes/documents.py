@@ -101,9 +101,9 @@ async def upload_documents(
         )
     if len(file.filename) > 45:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Filename greater than 45 characters"
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Filename greater than 45 characters",
+        )
 
     if file.content_type not in FILE_TYPES:
         raise HTTPException(
@@ -183,8 +183,9 @@ async def files_for(
 
     if token["role"] not in ("admin", "manager"):
         raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthtorized access to resource")
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthtorized access to resource",
+        )
 
     user_files = get_user_files(db, db_models.Files, user_id)
     return user_files
@@ -248,12 +249,11 @@ async def remove_user_files(
 ):
     """deletes file for a user, to be used by managers or admin"""
 
-
     if token["role"] not in ("admin", "manager"):
         raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthorized access to resource"
-            )
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
 
     record = db_crud.get_specific_record(
         db, db_models.Files, file_id=fileId
