@@ -166,18 +166,18 @@ class Invoices(Base):
     desc = Column(String(100), nullable=False)
     price = Column(Numeric(precision=15, scale=2), nullable=False)
     to_email = Column(String(30), nullable=False)
-    created_at = Column(Datetime, nullable=False)
+    created_at = Column(DateTime, nullable=False)
     created_by = Column(String(50), nullable=False)
     due_date = Column(Date, nullable=False)
-    updated_at = Column(Datetime)
+    updated_at = Column(DateTime)
     updated_by = Column(String(50))
     paid = Column(Boolean, default=False)
-    paid_at = Column(Datetime)
+    paid_at = Column(DateTime)
 
     def __str__(self):
         return (
             "(inv_id: {}, tile: {}, created_by: {}, to_user: {}, "
-            "price: {}, due_date: {}, paid: {})".format(
+            "price: {}, due_date: {}, paid: {}, updated_at: {}, updated_by: {})".format(
                 self.inv_id,
                 self.title,
                 self.created_by,
@@ -185,5 +185,7 @@ class Invoices(Base):
                 self.price,
                 self.due_date,
                 self.paid,
+                self.updated_at,
+                self.updated_by,
             )
         )

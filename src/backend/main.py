@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from models.db_engine import Base, engine
 from models import db_models
 from auth import user_login
-from routes import documents, drafts, users, messages
+from routes import documents, drafts, invoices, users, messages
 
 
 Base.metadata.create_all(bind=engine)
@@ -32,6 +32,7 @@ app.add_middleware(
 app.include_router(user_login.router)
 app.include_router(documents.router)
 app.include_router(drafts.router)
+app.include_router(invoices.router)
 app.include_router(users.router)
 app.include_router(messages.router)
 

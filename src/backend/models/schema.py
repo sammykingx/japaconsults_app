@@ -40,22 +40,21 @@ class UpdateDrafts(BaseModel):
 
 
 class CreateInvoice(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    title = str
+    title: str
     desc: str
     price: float
     to_email: EmailStr | None
     due_date: date
 
     class Config:
+        from_attributes=True
         json_schema_extra = {
                 "example": {
                     "title" : "the invoice title",
                     "desc": "A short description of the invoice",
-                    "price": 2500.00,
-                    "to_email": "example@example.com",
-                    "due_date": "date object",
+                    "price": 2500.12,
+                    "to_email": "user@example.com",
+                    "due_date": "2024-12-31",
                 }
             }
 

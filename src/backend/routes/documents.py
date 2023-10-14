@@ -227,7 +227,7 @@ async def remove_file(
         )
 
     db_crud.delete(db, db_models.Files, file_id=fileId)
-    gd.delete_files(fileId)
+    cloud.delete_files(fileId)
     return {
         "msg": "Deleted",
         "file_id": fileId,
@@ -271,7 +271,7 @@ async def remove_user_files(
         )
 
     db_crud.delete(db, db_models.Files, file_id=fileId)
-    gd.delete_files(fileId)
+    cloud.delete_files(fileId)
     return {
         "file_id": fileId,
         "file_name": record.name,
