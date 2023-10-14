@@ -48,6 +48,17 @@ class CreateInvoice(BaseModel):
     to_email: EmailStr | None
     due_date: date
 
+    class Config:
+        json_schema_extra = {
+                "example": {
+                    "title" : "the invoice title",
+                    "desc": "A short description of the invoice",
+                    "price": 2500.00,
+                    "to_email": "example@example.com",
+                    "due_date": "date object",
+                }
+            }
+
 
 class SendMessage(BaseModel):
     msg: str

@@ -9,11 +9,16 @@ from routes import documents, drafts, users, messages
 
 Base.metadata.create_all(bind=engine)
 
-
 app = FastAPI(
         title="Japaconsults User Portal",
         description="The backend application used to power the japaconsults user app",
-        version="v1")
+        version="v1",
+        contact={
+            "name": "sammykingx",
+            "url": "https://sammykingx.com.ng",
+            "email": "hello@sammykingx.com.ng",
+            }
+    )
 
 app.add_middleware(
         CORSMiddleware,
