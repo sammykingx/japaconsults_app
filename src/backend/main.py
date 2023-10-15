@@ -34,7 +34,7 @@ app.include_router(documents.router)
 app.include_router(drafts.router)
 app.include_router(invoices.router)
 app.include_router(users.router)
-app.include_router(messages.router)
+#app.include_router(messages.router)
 
 
 @app.get("/", tags=["status"])

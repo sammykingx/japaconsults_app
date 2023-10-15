@@ -231,7 +231,7 @@ async def change_user_password(
     return {"msg": "succesful"}
 
 
-@router.post("/logout", summary="Invalidates the user token")
+@router.get("/logout", summary="Invalidates the user token")
 async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     """revokes the user token"""
 

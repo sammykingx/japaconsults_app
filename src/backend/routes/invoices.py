@@ -31,17 +31,11 @@ class InvoiceResponse(BaseModel):
     to_email: EmailStr
     created_at: datetime
     created_by: str
-    updated_at: datetime
-    updated_by: str
+    updated_at: datetime | None
+    updated_by: str | None
     due_date: date
     paid: bool
     paid_at: datetime | None
-
-
-# temp
-# class FullInvoiceResponse(BaseModel, InvoiceResponse):
-#    updated_at: datetime
-#    updated_by: str
 
 
 @router.get(
@@ -52,7 +46,6 @@ class InvoiceResponse(BaseModel):
     response_model=list[InvoiceResponse],
 )
 async def get_all_invoice(
-    # email: EmailSr | None,
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
@@ -69,32 +62,32 @@ async def get_all_invoice(
     return data
 
 
-@router.get(
-    "/{invoiceId}",
-    summary="Returns a specific invoice by its id",
-    description="This endpoint can be used by all users",
-    response_model=InvoiceResponse,
-)
-async def get_invoice_by_id(
-    invoiceId: str,
-    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
-    db: Annotated[Session, Depends(db_engine.get_db)],
-):
-    """gets an invoice by its id"""
+# @router.get(
+#    "/{invoiceId}",
+#    summary="Returns a specific invoice by its id",
+#    description="This endpoint can be used by all users",
+#    response_model=InvoiceResponse,
+# )
+# async def get_invoice_by_id(
+#    invoiceId: str,
+#    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+#    db: Annotated[Session, Depends(db_engine.get_db)],
+# ):
+#    """gets an invoice by its id"""
+#
+#    record = db_crud.get_specific_record(
+#        db, db_models.Invoices, inv_id=invoiceId
+#    )
+#   is_empty(record)
+#    data = invoice_serializer(record)
+#    return data
 
-    record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=invoiceId
-    )
-    is_empty(record)
-    data = invoice_serializer(record)
-    return data
 
-# not tested
 @router.get(
     "/pending",
     summary="Returns all unpaid invoices",
     description="This method can be used by all users, no restrictions",
-    response_model=InvoiceResponse,
+    response_model=list[InvoiceResponse],
 )
 async def get_pending_invoices(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -102,9 +95,7 @@ async def get_pending_invoices(
 ):
     """returns all unpaid invoices"""
 
-    print("b4 if")
     if active_user["role"] == "user":
-        print("hello user")
         records = db_crud.get_by(
             db,
             db_models.Invoices,
@@ -113,7 +104,6 @@ async def get_pending_invoices(
         )
 
     else:
-        print("your not user")
         records = db_crud.get_by(db, db_models.Invoices, paid=False)
 
     is_empty(records)
@@ -121,7 +111,6 @@ async def get_pending_invoices(
     return data
 
 
-# not tested
 @router.get(
     "/paidInvoice",
     summary="returns all paid invoices",
@@ -165,11 +154,12 @@ async def create_invoice(
 ):
     """creates invoice"""
 
-    if active_user == "user":
+    if active_user["role"] == "user":
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized access to resource",
         )
+
     check_payload(payload)
     record = db_crud.get_specific_record(
         db, db_models.User, email=payload.to_email
@@ -231,6 +221,12 @@ async def update_invoice(
 ):
     """updates the invoice with the payload data"""
 
+    if active_user["role"] == "user":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
+
     check_payload(payload)
     record = db_crud.get_specific_record(
         db, db_models.Invoices, inv_id=payload.inv_id
@@ -246,6 +242,55 @@ async def update_invoice(
     db.refresh(record)
     # send to_email  email on updated invoice
     return {"msg": "Invoice Updated"}
+
+
+@router.patch(
+    "/manualUpdate",
+    summary="Manually change the invoice status to paid.",
+    description="Changes the invoice status to paid. should only be used by admin.",
+)
+async def manual_invoice_status_update(
+    invoiceId: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """updates the payment status of an invoic to paid"""
+
+    if active_user["role"] == "user":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
+
+    record = db_crud.get_specific_record(
+        db, db_models.Invoices, inv_id=invoiceId
+    )
+    is_empty(record)
+    record.paid = True
+    db.commit()
+    db.refresh(record)
+    return {"msg": "Payment status updated manaually"}
+
+
+@router.delete(
+    "/thrashInvoice",
+    summary="Deletes invoice from the system",
+    description="Removes invoice from the system, should be used by admin or managers",
+)
+async def delete_invoice(
+    invoiceId: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """removes an invoice by id"""
+
+    if active_user["role"] == "user":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
+    db_crud.delete(db, db_models.Invoices, inv_id=invoiceId)
+    return {"msg": "Deleted successfully"}
 
 
 def check_payload(payload: schema.CreateInvoice) -> None:
@@ -283,16 +328,16 @@ def invoice_serializer(record: db_models.Invoices):
     """serilize invoice"""
 
     return {
-            "inv_id": record.inv_id,
-            "title": record.title,
-            "desc": record.desc,
-            "price": record.price,
-            "to_email": record.to_email,
-            "created_at": record.created_at,
-            "created_by": record.created_by,
-            "updated_at": record.updated_at,
-            "updated_by": record.updated_by,
-            "due_date": record.due_date,
-            "paid": record.paid,
-            "paid_at": record.paid_at,
-        }
+        "inv_id": record.inv_id,
+        "title": record.title,
+        "desc": record.desc,
+        "price": record.price,
+        "to_email": record.to_email,
+        "created_at": record.created_at,
+        "created_by": record.created_by,
+        "updated_at": record.updated_at,
+        "updated_by": record.updated_by,
+        "due_date": record.due_date,
+        "paid": record.paid,
+        "paid_at": record.paid_at,
+    }
