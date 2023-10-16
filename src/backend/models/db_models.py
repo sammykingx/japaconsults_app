@@ -190,8 +190,20 @@ class Invoices(Base):
             )
         )
 
+
 class Payments(Basemodel):
     __tablename__ = "payments"
 
     ref_id = Column(String(15), primary_key=True, nullable=False, index=True)
-    flw_ref  = Column(String(50))
+    flw_ref  = Column(String(50), nullable=False)
+    flw_txRef = Column(String(20), nullable=False)
+    inv_id = Column(
+            String(16),
+            ForeignKey("invoices.inv_id", ondelete="SET DEFAULT"),
+            nullable=False
+        )
+    amount = Column(Numeric(precision=15, scale=2))
+    paid = Column(Boolean, default=False)
+    paid_by = Column(String(30))
+    paid_at = Column(DateTime)
+    paayment_type = Column(String(15))

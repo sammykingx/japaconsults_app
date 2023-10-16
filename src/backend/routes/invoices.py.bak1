@@ -1,0 +1,98 @@
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from models import db_crud, db_engine, db_models
+from auth import oauth2_users
+from datetime import date, datetime
+from typing import Annotated
+from pydantic import BaseModel, EmailStr
+import time
+
+
+router = APIRouter(
+        prefix="/invoices",
+        tags=["Invoice"],
+        responses={
+            200: {"description": "Successful response"},
+            201: {"description": "Invoice created"},
+            400: {"description": "Missing required data to process request"},
+            401: {"description": "Unauthorized access to resource"},
+            403: {"description": "Cannot access resource"},
+            404: {"description": "Resource Not Found"},
+            500: {"description": "Internal server error"},
+        },
+
+    )
+
+
+# temp
+class InvoiceResponse(BaseModel):
+    inv_id: str
+    title: str
+    desc: str
+    price: float
+    to_email: EmailStr
+    created_at: datetime
+    created_by: str
+    updated_at: datetime
+    updated_by: str
+    due_date: date
+    paid: bool
+    paid_at: datetime | None
+
+
+@router.get(
+        "/all",
+        summary="Returns all created invoices",
+        description="This endpoints can be used by previledged users and normal users. To get all "
+        "invoices for the logged in user, pass the user email address as query params.",
+        response_model=list[InvoiceResponse],
+)
+async def get_all_invoice(
+        active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+        db: Annotated[Session, Depends(db_engine.get_db)],
+    ):
+    """get all invoices created"""
+
+    if active_user["role"] == "user":
+        records = db_crud.get_by(
+                db, db_models.Invoices, to_email=active_user["email"]
+            )
+    else:
+        records = db_crud.get_all(db, db_models.Invoices)
+    is_empty(records)
+    data = [invoice_serializer(record) for record in records]
+    return data
+
+
+def is_empty(data: db_models.Invoices):
+    """checks if record is empty"""
+
+    if not data:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No Invoices found",
+            )
+
+
+def invoice_serializer(record: db_models.Invoices):
+    """serilize invoice"""
+
+    return {
+            "inv_id": record.inv_id,
+            "title": record.title,
+            "desc": record.desc,
+            "price": record.price,
+            "to_email": record.to_email,
+            "created_at": record.created_at,
+            "created_by": record.created_by,
+            "updated_at": record.updated_at,
+            "updated_by": record.updated_by,
+            "due_date": record.due_date,
+            "paid": record.paid,
+            "paid_at": record.paid_at,
+        }
+
+
+@router.get("/me")
+async def get_all_invoice():
+    return {"hey": "hey"}
