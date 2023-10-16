@@ -189,3 +189,9 @@ class Invoices(Base):
                 self.updated_by,
             )
         )
+
+class Payments(Basemodel):
+    __tablename__ = "payments"
+
+    ref_id = Column(String(15), primary_key=True, nullable=False, index=True)
+    flw_ref  = Column(String(50))
