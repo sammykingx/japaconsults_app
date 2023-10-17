@@ -185,7 +185,7 @@ async def create_invoice(
     db_crud.save(db, db_models.Invoices, data)
     if data.get("to_email", None):
         # send user an email for new invoice
-        pass
+        print("sending a mail here")
 
     return {"msg": "Invoice created", "invoiceId": data["inv_id"]}
 

@@ -1,7 +1,7 @@
 from rave_python import Rave
-from dotnv import load_dotenv
+from dotenv import load_dotenv
 import os
 
 
 load_dotenv()
-rave_pay = Rave(os.getenv, os.getenv, production=True)
+rave_pay = Rave(os.getenv("RAVE_PUBLIC_KEY"), os.getenv("RAVE_SECRET_KEY"), production=True)

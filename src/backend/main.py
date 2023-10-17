@@ -5,6 +5,7 @@ from models.db_engine import Base, engine
 from models import db_models
 from auth import user_login
 from routes import documents, drafts, invoices, users, messages
+from payments import card_payments
 
 
 Base.metadata.create_all(bind=engine)
@@ -34,6 +35,7 @@ app.include_router(documents.router)
 app.include_router(drafts.router)
 app.include_router(invoices.router)
 app.include_router(users.router)
+app.include_router(card_payments.router)
 #app.include_router(messages.router)
 
 
