@@ -14,7 +14,14 @@ from typing import Annotated, List
 from pydantic import BaseModel
 
 
-FOLDERS = ("academics", "billing", "general", "messages", "profile_pic")
+FOLDERS = (
+        "academics",
+        "billing",
+        "contract",
+        "general",
+        "messages",
+        "profile_pic",
+        "visa")
 
 FILE_TYPES = (
     "image/png",
@@ -65,9 +72,15 @@ def file_serializer(record) -> dict:
 
 
 def get_user_files(
-    db: Session, table: db_models.Files, user: int
-) -> list[dict]:
-    records = db_crud.get_by(db, table, owner_id=user)
+    db: Session,
+    table: db_models.Files,
+    user: int,
+    folderName: str | None) -> list[dict]:
+    """seriaalize user files"""
+    if folderName:
+        records = db_crud.get_by(db, table, owner_id=user, folder=folderName)
+    else:
+        records = db_crud.get_by(db, table, owner_id=user)
     if not records:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -161,10 +174,11 @@ class MyFiles(BaseModel):
 async def my_files(
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
+    folderName: str | None = None,
 ):
     """returns all files uploaded by the user"""
 
-    user_files = get_user_files(db, db_models.Files, token["sub"])
+    user_files = get_user_files(db, db_models.Files, token["sub"], folderName)
     return user_files
 
 
@@ -178,6 +192,7 @@ async def files_for(
     user_id: int,
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
+    folderName: str | None = None,
 ):
     """returns all files uploaded by the user id"""
 
@@ -187,7 +202,7 @@ async def files_for(
             detail="Unauthtorized access to resource",
         )
 
-    user_files = get_user_files(db, db_models.Files, user_id)
+    user_files = get_user_files(db, db_models.Files, user_id, folderName)
     return user_files
 
 
