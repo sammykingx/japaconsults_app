@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, redis_db
 from .flutterwave import rave_pay
-from rave_python import RaveExceptions
+from rave_python import Misc, RaveExceptions
 from typing import Annotated
 import datetime, time
 import json
@@ -17,6 +17,7 @@ router = APIRouter(
         tags=["card Paymemnts"],
         responses={
             200: {"description": "Successfule Request"},
+            400: {"description": "Missing required or Invalid data in request"},
         }
     )
 
@@ -47,11 +48,19 @@ async def card_payments(
             email=active_user["email"],
             amount=float(record.price),
             firstname=active_user["name"],
-            suggested_auth="PIN",
+           # suggested_auth="PIN",
         )
 
     try:
         res = rave_pay.Card.charge(card_details)
+        if res["suggestedAuth"]:
+            if res["suggestedAuth"] != "PIN":
+                raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"{res['suggestedAuth']} authentication not supported"
+                    )
+            card_details.update(suggested_auth="PIN")
+            res = rave_pay.Card.charge(card_details)
 
     except RaveExceptions.CardChargeError as err:
         raise HTTPException(
@@ -100,7 +109,6 @@ async def verify_card_payments(
 
     try:
         res = rave_pay.Card.validate(rave_flwRef, payload.otp)
-        print("validate =", res)
         res = rave_pay.Card.verify(rave_txRef)
 
     except RaveExceptions.TransactionValidationError as err:
@@ -141,6 +149,7 @@ async def verify_card_payments(
     return {
             "transactionComplete": True,
             "ref_id": payload.ref_id,
+            "inv_id": invoice_record.inv_id,
             "amount": res["amount"],
             "chargedamount": res["chargedamount"],
             "currency": res["currency"],
