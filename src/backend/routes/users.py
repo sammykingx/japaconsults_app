@@ -127,7 +127,7 @@ async def all_users(
     """gets all accounts of role 'user'"""
 
     if user["role"] == "user":
-        raise ETTPException(
+        raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized access to resource",
         )

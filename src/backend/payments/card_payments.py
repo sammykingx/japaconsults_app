@@ -47,8 +47,9 @@ async def card_payments(
             email=active_user["email"],
             amount=float(record.price),
             firstname=active_user["name"],
-            suggested_auth="PIN",)
-    print(card_details)
+            suggested_auth="PIN",
+        )
+
     try:
         res = rave_pay.Card.charge(card_details)
 
@@ -82,25 +83,21 @@ async def verify_card_payments(
 ):
     """veriy's card payments"""
 
-    # check if the ref_id exist in redis then check db if it doesnt
+    # check if the ref_id exist on redis
     if not redis.exists(payload.ref_id):
         raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No matching reference id found to continue transaction"
             )
+
     data = json.loads(redis.get(payload.ref_id))
     rave_flwRef = data["flwRef"]
     rave_txRef = data["txRef"]
-#    else:
-    record = db_crud.get_specific_record(
+
+    payment_record = db_crud.get_specific_record(
             db, db_models.Payments, ref_id=payload.ref_id
         )
-#        rave_flwRef = record.flw_ref
-#        rave_txRef = record.flw_txRef
-    if not record:
-            raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="No matching reference id found to continue transaction")
+
     try:
         res = rave_pay.Card.validate(rave_flwRef, payload.otp)
         print("validate =", res)
@@ -116,15 +113,38 @@ async def verify_card_payments(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=err.err["errMsg"]
             )
-    # update the payments table and invoic table
+    # get successfull payment timestamp
+    payment_timestamp  = datetime.datetime.utcnow()
+
+    # delete key from redis
     redis.delete(payload.ref_id)
-    return {"transactionComplete": True,
+
+    invoice_record = db_crud.get_specific_record(
+            db, db_models.Invoices, inv_id=payment_record.inv_id
+        )
+
+    # update payments
+    payment_record.paid = True
+    payment_record.paid_by = active_user["name"]
+    payment_record.paid_at = payment_timestamp
+    payment_record.payment_type = "card"
+
+    # update invoice
+    invoice_record.paid = True
+    invoice_record.paid_at = payment_timestamp
+
+    db.commit()
+
+    db.refresh(payment_record)
+    db.refresh(invoice_record)
+
+    return {
+            "transactionComplete": True,
             "ref_id": payload.ref_id,
             "amount": res["amount"],
             "chargedamount": res["chargedamount"],
-            "currency": res["currency"],}
-    # call validate with otp to match
-    # then verify to match
+            "currency": res["currency"],
+        }
 
 
 #async def get_record(db,)
