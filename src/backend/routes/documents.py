@@ -12,6 +12,7 @@ from models import db_engine, db_models, db_crud
 from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
+import datetime
 
 
 FOLDERS = (
@@ -58,7 +59,10 @@ class UploadDocuments(BaseModel):
 # temp
 class UploadedFileResponse(BaseModel):
     file_name: str
+    folder: str
+    size: float | int
     file_url: str
+    date: datetime.datetime
 
 
 # temp
@@ -140,18 +144,24 @@ async def upload_documents(
     )
 
     # save to db
+    date_uploaded = datetime.datetime.utcnow()
     db_record = {
         "file_id": resp["id"],
         "name": file.filename,
         "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
         "owner_id": token["sub"],
         "folder": folder_name,
+        "size": len(data),
+        "date_uploaded": date_uploaded,
     }
     db_crud.save(db, db_models.Files, db_record)
 
     file_resp = {
         "file_name": file.filename,
         "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
+        "folder": folder_name,
+        "size": str(len(data) / 1024) + "mb",
+        "date_uploaded": date_uploaded,
     }
 
     return file_resp
