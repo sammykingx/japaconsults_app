@@ -150,12 +150,7 @@ async def send_notes(
     }
     db_crud.save(db, db_models.RecievedNotes, data)
     # send a notification to user on the new event
-    return {"msg": "note sent successfully"}
-
-
-#    raise HTTPException(
-#            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-#            detail="still in development")
+    return {"msg": "Note sent successfully"}
 
 
 @router.post(

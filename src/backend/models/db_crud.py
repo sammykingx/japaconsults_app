@@ -92,22 +92,21 @@ def save(session: Session, db_table, record):
     return data
 
 
-def update(col_id: int, session: Session, db_table, **kwargs):
-    """upates a record in db table
+def record_in_lifo(session: Session, db_table, **kwargs):
+    """returns all record using last in first out
 
-    @col_id: the column ID to query it must be unique across table
     @session: the request session object
     @db_table: the table to query
-    @record: the data to update in table
+    @kwargs: the argument filter
     """
 
     try:
-        record = session.query(db_table).filter_by(**kwargs).first()
+        record = session.query(db_table).filter_by(**kwargs).all()
 
     except Exception as err:
         raise DB_EXCEPTION
 
-    ## not completed yet
+    return record.reverse()
 
 
 def delete(session: Session, db_table, **kwargs):

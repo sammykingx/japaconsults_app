@@ -12,6 +12,7 @@ from models import db_engine, db_models, db_crud
 from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
+from enum import Enum
 import datetime
 
 
@@ -50,6 +51,14 @@ router = APIRouter(
 )
 
 
+class Folder(Enum):
+    academics = "academics"
+    billing = "billing"
+    contracts = "contracts"
+    general = "general"
+    visa = "visa"
+
+
 # temp
 class UploadDocuments(BaseModel):
     folder_name: str
@@ -60,7 +69,7 @@ class UploadDocuments(BaseModel):
 class UploadedFileResponse(BaseModel):
     file_name: str
     folder: str
-    size: float | int
+    size: str
     file_url: str
     date_uploaded: datetime.datetime
 
@@ -81,10 +90,16 @@ def get_user_files(
     db: Session,
     table: db_models.Files,
     user: int,
-    folderName: str | None) -> list[dict]:
+    folderName: str | None,
+    desc: bool = False) -> list[dict]:
     """serialize user files"""
 
     if folderName:
+        if folder_name not in FOLDERS:
+            raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Invalid folder specified",
+                )
         records = db_crud.get_by(db, table, owner_id=user, folder=folderName)
     else:
         records = db_crud.get_by(db, table, owner_id=user)
@@ -93,6 +108,8 @@ def get_user_files(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No files found for user",
         )
+    if desc:
+        return [file_serializer(record) for record in records].reverse()
 
     return [file_serializer(record) for record in records]
 
@@ -108,7 +125,6 @@ def get_user_files(
 async def upload_documents(
     folder_name: str,
     file: UploadFile,
-    # payload: UploadDocuments,
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
@@ -133,6 +149,7 @@ async def upload_documents(
 
     data = await file.read()
     FILE_MAX_SIZE = 3145728
+    size = len(data)
     if len(data) > FILE_MAX_SIZE:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -145,7 +162,7 @@ async def upload_documents(
         data,
         file.content_type,
     )
-
+    print(folder_name, type(folder_name))
     # save to db
     date_uploaded = datetime.datetime.utcnow()
     db_record = {
@@ -163,7 +180,7 @@ async def upload_documents(
         "file_name": file.filename,
         "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
         "folder": folder_name,
-        "size": str(len(data) / 1024) + "mb",
+        "size": size,
         "date_uploaded": date_uploaded,
     }
 
@@ -176,7 +193,7 @@ class MyFiles(BaseModel):
     name: str
     file_url: str
     folder: str
-    size: float | int
+    size: str
     date_uploaded: datetime.datetime
 
 
@@ -201,7 +218,7 @@ async def my_files(
     "/userfiles",
     summary="gets all the files for a specific user",
     description="should be used by admin or managers only",
-    response_model=list[MyFiles],
+#    response_model=list[MyFiles],
 )
 async def files_for(
     user_id: int,
@@ -220,6 +237,24 @@ async def files_for(
     user_files = get_user_files(db, db_models.Files, user_id, folderName)
     return user_files
 
+
+@router.get(
+        "/recentFiles",
+        summary="Gets the recent files uploaded by the aactive user",
+        description="This endpoints allows the active user to see all "\
+                    "his/her recent files uploaded. To see recent files "\
+                    "based on folder, pass the folder name as query param",
+        response_model=list[MyFiles])
+async def user_recent_files(
+    token: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+    folderName: str | None = None,
+):
+    """see recentt files"""
+
+    user_files = get_user_files(
+            db, db_models.Files, token["sub"], folderName, desc=True)
+    return user_files
 
 # temp
 class DeleteFile(BaseModel):
