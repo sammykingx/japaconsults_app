@@ -61,7 +61,13 @@ async def get_all_drafts(
 ):
     """Gets all notes by a user from the database"""
 
-    resp = db_crud.get_by(db, db_models.Drafts, user_id=token["sub"])
+    resp = db_crud.record_in_lifo(
+            db,
+            db_models.Drafts,
+            db_models.Drafts.last_updated,
+            user_id=token["sub"],
+        )
+
     if not resp:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -177,11 +183,13 @@ async def save_drafts(
         )
 
     dup_data = payload.dict().copy()
-    data = {
-        key: dup_data.get(key) for key in dup_data if dup_data.get(key)
-    }
-    draft = {"user_id": user["sub"]}
-    draft.update(data)
+    time_stamp  = datetime.utcnow()
+    draft = {
+            "user_id": user["sub"],
+            "date_created": time_stamp,
+            "last_updated": time_stamp,
+        }
+    draft.update(dup_data)
     saved_draft = db_crud.save(db, db_models.Drafts, draft)
     return {"msg": "note created", "draft_id": saved_draft.draft_id}
 
@@ -210,7 +218,7 @@ async def update_draft(
         )
     note.title = temp["title"]
     note.content = temp["content"]
-    note.last_updated = temp["last_updated"]
+    note.last_updated = datetime.utcnow()
     db.commit()
     db.refresh(note)
 

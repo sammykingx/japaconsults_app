@@ -29,14 +29,22 @@ class CreateDrafts(BaseModel):
     title: str
     content: str
     # doc_url: list | None = None
-    date_created: datetime
+    # date_created: datetime
+
+    class Config:
+        json_schema_extra  = {
+                    "example": {
+                    "title": "The title of the note",
+                    "content": "The content of the notes. It can be long as possible",
+                }
+            }
 
 
 class UpdateDrafts(BaseModel):
     draft_id: int
     title: str
     content: str
-    last_updated: datetime
+    # last_updated: datetime
 
 
 class CreateInvoice(BaseModel):

@@ -17,13 +17,14 @@ import datetime
 
 
 FOLDERS = (
-        "academics",
-        "billing",
-        "contract",
-        "general",
-        "messages",
-        "profile_pic",
-        "visa")
+    "academics",
+    "billing",
+    "contract",
+    "general",
+    "messages",
+    "profile_pic",
+    "visa",
+)
 
 FILE_TYPES = (
     "image/png",
@@ -81,7 +82,7 @@ def file_serializer(record) -> dict:
         "name": record.name,
         "folder": record.folder,
         "file_url": record.file_url,
-        "size": record.size,
+        "size": str(record.size / (1024 * 1024)),
         "date_uploaded": record.date_uploaded,
     }
 
@@ -91,15 +92,15 @@ def get_user_files(
     table: db_models.Files,
     user: int,
     folderName: str | None,
-    desc: bool = False) -> list[dict]:
+) -> list[dict]:
     """serialize user files"""
 
     if folderName:
-        if folder_name not in FOLDERS:
+        if folderName not in FOLDERS:
             raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Invalid folder specified",
-                )
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Invalid folder specified",
+            )
         records = db_crud.get_by(db, table, owner_id=user, folder=folderName)
     else:
         records = db_crud.get_by(db, table, owner_id=user)
@@ -108,10 +109,12 @@ def get_user_files(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No files found for user",
         )
-    if desc:
-        return [file_serializer(record) for record in records].reverse()
+    #    if desc:
+    #        user_files = [file_serializer(record) for record in records if record.size]
+    #        user_files.reverse()
+    #        return user_files
 
-    return [file_serializer(record) for record in records]
+    return [file_serializer(record) for record in records if record.size]
 
 
 @router.post(
@@ -162,9 +165,10 @@ async def upload_documents(
         data,
         file.content_type,
     )
-    print(folder_name, type(folder_name))
-    # save to db
+
     date_uploaded = datetime.datetime.utcnow()
+
+    # save to db
     db_record = {
         "file_id": resp["id"],
         "name": file.filename,
@@ -174,13 +178,15 @@ async def upload_documents(
         "size": len(data),
         "date_uploaded": date_uploaded,
     }
+
     data = db_crud.save(db, db_models.Files, db_record)
 
     file_resp = {
         "file_name": file.filename,
         "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
+        # "file_url": "demo resp",
         "folder": folder_name,
-        "size": size,
+        "size": f"{size / (1024 * 1024)}mb",
         "date_uploaded": date_uploaded,
     }
 
@@ -194,7 +200,7 @@ class MyFiles(BaseModel):
     file_url: str
     folder: str
     size: str
-    date_uploaded: datetime.datetime
+    date_uploaded: datetime.datetime | None
 
 
 @router.get(
@@ -218,7 +224,7 @@ async def my_files(
     "/userfiles",
     summary="gets all the files for a specific user",
     description="should be used by admin or managers only",
-#    response_model=list[MyFiles],
+    #    response_model=list[MyFiles],
 )
 async def files_for(
     user_id: int,
@@ -239,12 +245,13 @@ async def files_for(
 
 
 @router.get(
-        "/recentFiles",
-        summary="Gets the recent files uploaded by the aactive user",
-        description="This endpoints allows the active user to see all "\
-                    "his/her recent files uploaded. To see recent files "\
-                    "based on folder, pass the folder name as query param",
-        response_model=list[MyFiles])
+    "/recentFiles",
+    summary="Gets the recent files uploaded by the aactive user",
+    description="This endpoints allows the active user to see all "
+    "his/her recent files uploaded. To see recent files "
+    "based on folder, pass the folder name as query param",
+    response_model=list[MyFiles],
+)
 async def user_recent_files(
     token: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -252,9 +259,34 @@ async def user_recent_files(
 ):
     """see recentt files"""
 
-    user_files = get_user_files(
-            db, db_models.Files, token["sub"], folderName, desc=True)
-    return user_files
+    if folderName:
+        if folderName not in FOLDERS:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REEQUEST,
+                detail="Invalid destination folder",
+            )
+        records = db_crud.record_in_lifo(
+            db,
+            db_models.Files,
+            db_models.Files.date_uploaded,
+            owner_id=token["sub"],
+            folder=folderName,
+        )
+    else:
+        records = db_crud.record_in_lifo(
+            db,
+            db_models.Files,
+            db_models.Files.date_uploaded,
+            owner_id=token["sub"],
+        )
+    if not records:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No files found for user",
+        )
+
+    return [file_serializer(record) for record in records if record.size]
+
 
 # temp
 class DeleteFile(BaseModel):
@@ -276,9 +308,7 @@ async def remove_file(
 ):
     """Deletes a file owned by the active user from cloud storage"""
 
-    record = db_crud.get_specific_record(
-        db, db_models.Files, file_id=fileId
-    )
+    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -303,8 +333,7 @@ async def remove_file(
 @router.delete(
     "/removeUserFile",
     summary="removes files owned by a user",
-    description="Should be used by admin or managers in deleting "
-    "user files",
+    description="Should be used by admin or managers in deleting " "user files",
     response_model=DeleteFile,
 )
 async def remove_user_files(
@@ -320,9 +349,7 @@ async def remove_user_files(
             detail="Unauthorized access to resource",
         )
 
-    record = db_crud.get_specific_record(
-        db, db_models.Files, file_id=fileId
-    )
+    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
