@@ -10,6 +10,7 @@ from typing import Annotated
 from google_auth_oauthlib.flow import Flow
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr
+from enum import Enum
 import jwt, pathlib, os
 
 
@@ -102,6 +103,11 @@ class ResponseToken(BaseModel):
     token: str
 
 
+class TokenType(Enum):
+    new_user = "new_user"
+    password_change = "password_change"
+
+
 @router.post(
     "/generate/emailToken",
     summary="Generates email verification token to verify email",
@@ -113,6 +119,7 @@ async def generate_email_token(
     mail: EmailStr,
     req: Request,
     db: Annotated[Session, Depends(db_engine.get_db)],
+    verv_type: TokenType
 ):
     """generate email verification token to email address"""
 
@@ -227,7 +234,7 @@ async def change_user_password(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
         )
-#    INVALID_EMAIL_TOKEN.append(payload.token)
+
     return {"msg": "succesful"}
 
 

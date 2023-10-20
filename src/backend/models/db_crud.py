@@ -88,6 +88,8 @@ def save(session: Session, db_table, record):
         print(f"error in save => {err}")
         # send yourself a mail here
         raise DB_EXCEPTION
+    
+    return data
 
 
 def update(col_id: int, session: Session, db_table, **kwargs):

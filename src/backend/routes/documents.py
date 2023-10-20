@@ -62,7 +62,7 @@ class UploadedFileResponse(BaseModel):
     folder: str
     size: float | int
     file_url: str
-    date: datetime.datetime
+    date_uploaded: datetime.datetime
 
 
 # temp
@@ -72,6 +72,8 @@ def file_serializer(record) -> dict:
         "name": record.name,
         "folder": record.folder,
         "file_url": record.file_url,
+        "size": record.size,
+        "date_uploaded": record.date_uploaded,
     }
 
 
@@ -80,7 +82,8 @@ def get_user_files(
     table: db_models.Files,
     user: int,
     folderName: str | None) -> list[dict]:
-    """seriaalize user files"""
+    """serialize user files"""
+
     if folderName:
         records = db_crud.get_by(db, table, owner_id=user, folder=folderName)
     else:
@@ -154,7 +157,7 @@ async def upload_documents(
         "size": len(data),
         "date_uploaded": date_uploaded,
     }
-    db_crud.save(db, db_models.Files, db_record)
+    data = db_crud.save(db, db_models.Files, db_record)
 
     file_resp = {
         "file_name": file.filename,
@@ -173,6 +176,8 @@ class MyFiles(BaseModel):
     name: str
     file_url: str
     folder: str
+    size: float | int
+    date_uploaded: datetime.datetime
 
 
 @router.get(

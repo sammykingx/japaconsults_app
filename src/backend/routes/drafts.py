@@ -187,8 +187,8 @@ async def save_drafts(
     }
     draft = {"user_id": user["sub"]}
     draft.update(data)
-    db_crud.save(db, db_models.Drafts, draft)
-    return {"msg": "note created"}
+    saved_draft = db_crud.save(db, db_models.Drafts, draft)
+    return {"msg": "note created", "draft_id": saved_draft.draft_id}
 
 
 @router.put("/update", status_code=status.HTTP_200_OK)
