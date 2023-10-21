@@ -1,4 +1,6 @@
 from email.message import EmailMessage
+#from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
 import os, smtplib
@@ -19,10 +21,10 @@ def send_email(message, to_addr, subject, attachment=None):
     mail_msg["from"] = os.getenv("SMTP_MAIL")
     mail_msg["to"] = to_addr
     mail_msg["subject"] = subject
-    mail_msg.set_content(message)
+    mail_msg.add_alternative(message, subtype="html")
 
     with smtplib.SMTP_SSL(
-        os.getenv("SMTP_HOST"), os.getenv("SMTP_PORT"), timeout=15
+        os.getenv("SMTP_HOST"), os.getenv("SMTP_PORT"), timeout=8
     ) as mail_server:
         try:
             # print("login into mail_Server")

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from models import db_engine, db_models, schema
-from utils import password_hash
+from utils import email_notification, password_hash
 from auth import oauth2_users
 from typing import Annotated
 from google_auth_oauthlib.flow import Flow
@@ -130,7 +131,7 @@ async def generate_email_token(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues on email token "\
-                    "generation, check back later",
+                   "generation, check back later",
         )
     if not user:
         raise HTTPException(
@@ -138,9 +139,38 @@ async def generate_email_token(
             detail="No user account found",
         )
     email_token = oauth2_users.email_verification_token(mail)
-    verv_endpoint = "{}{}{}".format(
-        req.url_for("verify_user_email"), "?token=", email_token
-    )
+
+    #verv_endpoint = "{}{}{}".format(
+    #    req.url_for("verify_user_email"), "?token=", email_token
+    #)
+
+    templates = Jinja2Templates(directory="templates")
+    if verv_type.new_user:
+        message = templates.TemplateResponse(
+                "email_verification.html",
+                {
+                    "user": user.name,
+                    "email_token": email_token,
+                    "request": req,
+                },
+            ).body.decode()
+
+        email_notification.send_email(
+                message, mail, "Account Verification Required"
+            )
+    else:
+        message = templates.TemplateResponse(
+                "changePassword.html",
+                {
+                    "user": user.name,
+                    "email_token": email_token,
+                    "request": req,
+                },
+            ).body.decode()
+        email_notification.send_email(
+            message, mail, "IT'S URGENT - Verify password change"
+            )
+
     return {"token": email_token}
 
 

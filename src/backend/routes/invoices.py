@@ -52,9 +52,7 @@ async def get_all_invoice(
     """get all invoices created"""
 
     if active_user["role"] == "user":
-        records = db_crud.get_by(
-            db, db_models.Invoices, to_email=active_user["email"]
-        )
+        records = db_crud.get_by(db, db_models.Invoices, to_email=active_user["email"])
     else:
         records = db_crud.get_all(db, db_models.Invoices)
     is_empty(records)
@@ -161,9 +159,7 @@ async def create_invoice(
         )
 
     check_payload(payload)
-    record = db_crud.get_specific_record(
-        db, db_models.User, email=payload.to_email
-    )
+    record = db_crud.get_specific_record(db, db_models.User, email=payload.to_email)
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -180,6 +176,7 @@ async def create_invoice(
             "inv_id": "JPC-" + str(round(time.time())),
             "created_at": datetime.utcnow(),
             "created_by": active_user["name"],
+            # invoice type
         }
     )
     db_crud.save(db, db_models.Invoices, data)
@@ -228,9 +225,7 @@ async def update_invoice(
         )
 
     check_payload(payload)
-    record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=payload.inv_id
-    )
+    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=payload.inv_id)
     is_empty(record)
     record.title = payload.title
     record.desc = payload.desc
@@ -262,9 +257,7 @@ async def manual_invoice_status_update(
             detail="Unauthorized access to resource",
         )
 
-    record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=invoiceId
-    )
+    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=invoiceId)
     is_empty(record)
     record.paid = True
     db.commit()

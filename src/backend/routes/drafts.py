@@ -62,11 +62,11 @@ async def get_all_drafts(
     """Gets all notes by a user from the database"""
 
     resp = db_crud.record_in_lifo(
-            db,
-            db_models.Drafts,
-            db_models.Drafts.last_updated,
-            user_id=token["sub"],
-        )
+        db,
+        db_models.Drafts,
+        db_models.Drafts.last_updated,
+        user_id=token["sub"],
+    )
 
     if not resp:
         raise HTTPException(
@@ -98,9 +98,7 @@ async def receive_notes(
 ):
     """Get's all notes sent to current logged-in user"""
 
-    records = db_crud.get_by(
-        db, db_models.RecievedNotes, to_id=user["sub"]
-    )
+    records = db_crud.get_by(db, db_models.RecievedNotes, to_id=user["sub"])
     if not records:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -129,17 +127,13 @@ async def send_notes(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid request, owner_id == receiver_id",
         )
-    draft = db_crud.get_specific_record(
-        db, db_models.Drafts, draft_id=payload.draftId
-    )
+    draft = db_crud.get_specific_record(db, db_models.Drafts, draft_id=payload.draftId)
 
     if not draft:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="No notes found"
         )
-    to_user = db_crud.get_specific_record(
-        db, db_models.User, user_id=payload.toId
-    )
+    to_user = db_crud.get_specific_record(db, db_models.User, user_id=payload.toId)
 
     if not to_user:
         raise HTTPException(
@@ -183,12 +177,12 @@ async def save_drafts(
         )
 
     dup_data = payload.dict().copy()
-    time_stamp  = datetime.utcnow()
+    time_stamp = datetime.utcnow()
     draft = {
-            "user_id": user["sub"],
-            "date_created": time_stamp,
-            "last_updated": time_stamp,
-        }
+        "user_id": user["sub"],
+        "date_created": time_stamp,
+        "last_updated": time_stamp,
+    }
     draft.update(dup_data)
     saved_draft = db_crud.save(db, db_models.Drafts, draft)
     return {"msg": "note created", "draft_id": saved_draft.draft_id}
@@ -203,9 +197,7 @@ async def update_draft(
     """Updates the drafts record for a particular user_id"""
 
     temp = payload.dict().copy()
-    note = db_crud.get_specific_record(
-        db, db_models.Drafts, draft_id=temp["draft_id"]
-    )
+    note = db_crud.get_specific_record(db, db_models.Drafts, draft_id=temp["draft_id"])
     if not note:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -237,9 +229,7 @@ async def delete_draft(
 ):
     """deletes the drafts from the record"""
 
-    draft = db_crud.get_specific_record(
-        db, db_models.Drafts, draft_id=d_id
-    )
+    draft = db_crud.get_specific_record(db, db_models.Drafts, draft_id=d_id)
     if not draft:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from models import db_engine, db_crud, db_models, schema
 from auth import oauth2_users
@@ -28,6 +29,8 @@ router = APIRouter(
 
 
 USER_ROLES = ("admin", "user", "manager", "staff")
+
+templates = Jinja2Templates(directory="templates")
 
 
 def serialize_user(user: db_models.User) -> dict:
@@ -107,9 +110,7 @@ async def get_users(
             detail="No users on the system",
         )
 
-    all_users = [
-        serialize_user(user) for user in users if user.is_verified
-    ]
+    all_users = [serialize_user(user) for user in users if user.is_verified]
     return all_users
 
 
@@ -242,9 +243,7 @@ async def user_profile(
 ) -> dict:
     """return the users details"""
 
-    record = db_crud.get_specific_record(
-        db, db_models.User, user_id=token["sub"]
-    )
+    record = db_crud.get_specific_record(db, db_models.User, user_id=token["sub"])
     profile = serialize_user(record)
     return profile
 
@@ -268,9 +267,7 @@ async def user_details_by_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized access to resource",
         )
-    record = db_crud.get_specific_record(
-        db, db_models.User, user_id=userId
-    )
+    record = db_crud.get_specific_record(db, db_models.User, user_id=userId)
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -297,13 +294,12 @@ class UserRegistrationToken(BaseModel):
 async def register_user(
     payload: schema.RegisterUser,
     db: Annotated[Session, Depends(db_engine.get_db)],
+    req: Request,
 ):
     """Adds a user to the database"""
 
     check_user_payload(payload)
-    resp = db_crud.get_specific_record(
-        db, db_models.User, email=payload.email
-    )
+    resp = db_crud.get_specific_record(db, db_models.User, email=payload.email)
     if resp:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -313,15 +309,18 @@ async def register_user(
     temp_data = payload.dict().copy()
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
     db_crud.save(db, db_models.User, temp_data)
-    token = oauth2_users.email_verification_token(payload.email)
-    message = (
-        f"Welcome to japaconsults user Portal, We're thrilled to "
-        "have you on board."
-    )
+    # email_token = oauth2_users.email_verification_token(payload.email)
+    # message = templates.TemplateResponse(
+    #        "email_verification.html",
+    #        {
+    #            "user": temp_data["name"],
+    #            "email_token": email_token,
+    #            "request": req
+    #        },
+    #    ).body.decode()
+    # email_notification.send_email(
+    #    message, temp_data["email"], "WELCOME EMAIL")
 
-    email_notification.send_email(
-        message, temp_data["email"], "WELCOME EMAIL"
-    )
     return {
         "msg": "user account created succefully",
         "status": "Unverified",
@@ -356,9 +355,7 @@ async def change_user_role(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user role selected",
         )
-    record = db_crud.get_specific_record(
-        db, db_models.User, email=payload.user_email
-    )
+    record = db_crud.get_specific_record(db, db_models.User, email=payload.user_email)
     if not record:
         raise HTTPexception(
             status_code=status.HTTP_404_NOT_FOUND, detail="No user found"
@@ -414,9 +411,7 @@ async def user_profile_pic(
         data,
         file.content_type,
     )
-    record = db_crud.get_specific_record(
-        db, db_models.User, user_id=user["sub"]
-    )
+    record = db_crud.get_specific_record(db, db_models.User, user_id=user["sub"])
     record.profile_pic = resp["webViewLink"].removesuffix("?usp=drivesdk")
     try:
         db.commit()
