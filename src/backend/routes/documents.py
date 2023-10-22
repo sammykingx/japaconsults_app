@@ -82,7 +82,7 @@ def file_serializer(record) -> dict:
         "name": record.name,
         "folder": record.folder,
         "file_url": record.file_url,
-        "size": str(record.size / (1024 * 1024)),
+        "size": str(record.size / (1024 * 1024)) + " mb",
         "date_uploaded": record.date_uploaded,
     }
 
@@ -114,7 +114,7 @@ def get_user_files(
     #        user_files.reverse()
     #        return user_files
 
-    return [file_serializer(record) for record in records if record.size]
+    return [file_serializer(record) for record in records]
 
 
 @router.post(
@@ -184,7 +184,6 @@ async def upload_documents(
     file_resp = {
         "file_name": file.filename,
         "file_url": resp["webViewLink"].removesuffix("?usp=drivesdk"),
-        # "file_url": "demo resp",
         "folder": folder_name,
         "size": f"{size / (1024 * 1024)}mb",
         "date_uploaded": date_uploaded,
@@ -200,7 +199,7 @@ class MyFiles(BaseModel):
     file_url: str
     folder: str
     size: str
-    date_uploaded: datetime.datetime | None
+    date_uploaded: datetime.datetime
 
 
 @router.get(

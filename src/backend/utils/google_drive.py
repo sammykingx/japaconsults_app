@@ -26,12 +26,19 @@ def create_drive_api():
     )
     try:
         drive_api = build("drive", "v3", credentials=acc_cred)
+    
+    except exceptions.TransportError:
+        raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="failed to establish connection to 3rd party service",
+            )
 
     except exceptions.MutualTLSChannelError:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="failed to establish connection to 3rd party service",
         )
+
     return drive_api
 
 
@@ -174,7 +181,7 @@ def list_files(folder: bool = False):
     except errors.HttpError:
         raise DRIVE_EXCEPTION
 
-    print(files)
+    #print(files)
     return files
 
 

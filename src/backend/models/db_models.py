@@ -119,8 +119,8 @@ class Files(Base):
     file_url = Column(String(100), nullable=False)
     owner_id = Column(Integer, nullable=False)
     folder = Column(String(50), nullable=False)
-    size = Column(Integer)
-    date_uploaded = Column(DateTime)
+    size = Column(Integer, nullable=False)
+    date_uploaded = Column(DateTime, nullable=False)
 
     def __repr__(self):
         return "Files({}, {}, {}. {})".format(

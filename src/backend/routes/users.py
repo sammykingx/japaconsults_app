@@ -201,6 +201,7 @@ async def all_managers(
 @router.get(
     "/allAdmin",
     summary="Returns all administrators",
+    description="This endpoint should only be used by admin",
     response_model=list[AllUsersResponse],
 )
 async def all_admins(
