@@ -41,8 +41,7 @@ class InvoiceResponse(BaseModel):
 @router.get(
     "/all",
     summary="Returns all created invoices",
-    description="This endpoints can be used by previledged users and normal users. To get all "
-    "invoices for the logged in user, pass the user email address as query params.",
+    description="This endpoints can be used by previledged and normal users",
     response_model=list[InvoiceResponse],
 )
 async def get_all_invoice(
@@ -84,7 +83,7 @@ async def get_all_invoice(
 @router.get(
     "/pending",
     summary="Returns all unpaid invoices",
-    description="This method can be used by all users, no restrictions",
+    description="This endpoint can be used by all users, no restrictions",
     response_model=list[InvoiceResponse],
 )
 async def get_pending_invoices(
@@ -112,7 +111,7 @@ async def get_pending_invoices(
 @router.get(
     "/paidInvoice",
     summary="returns all paid invoices",
-    description="Use this method to get all paid invoices both for users and previledged users."
+    description="Use this endpoint to get all paid invoices both for users and previledged users."
     "To get all paid invoices by the active user, pass the email of user as query "
     "parameter.",
     response_model=list[InvoiceResponse],

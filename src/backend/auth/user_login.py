@@ -145,7 +145,7 @@ async def generate_email_token(
     #)
 
     templates = Jinja2Templates(directory="templates")
-    if verv_type.new_user:
+    if verv_type == TokenType.new_user:
         message = templates.TemplateResponse(
                 "email_verification.html",
                 {

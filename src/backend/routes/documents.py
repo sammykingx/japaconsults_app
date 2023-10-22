@@ -122,7 +122,7 @@ def get_user_files(
     summary="Takes a list of files and uploads to google cloud storage",
     description="folder_name should be the name of the folder to upload to "
     "While the file should contain a list of file object.\n"
-    "folder name: academics, billing,  general, messages.",
+    "folder name: academics, billing, contract, general, visa",
     response_model=UploadedFileResponse,
 )
 async def upload_documents(
