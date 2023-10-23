@@ -5,11 +5,24 @@ from datetime import date, datetime
 class RegisterUser(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    name: str
+    first_name: str
+    last_name: str
     email: EmailStr
     password: str
-    phone_num: str = "+2347043215534"
-    role: str = "user"
+    phone_num: str
+    role: str
+
+    class Config:
+        json_schema_extra = {
+                "example": {
+                        "first_name": "Test",
+                        "last_name": "user",
+                        "email": "testuser@gmail.com",
+                        "password": "yoursuperStrong!paswword",
+                        "phone_num": "+23480123345654",
+                        "role": "user",
+                    }
+            }
 
 
 class UserProfile:

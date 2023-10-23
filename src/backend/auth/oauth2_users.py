@@ -62,7 +62,7 @@ def token_payload(user) -> dict:
 
     payload = {
         "sub": user.user_id,
-        "name": user.name,
+        "name": f"{user.first_name} {user.last_name}",
         "email": user.email,
         "role": user.role,
         "img": user.profile_pic,

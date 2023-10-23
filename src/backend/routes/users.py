@@ -38,7 +38,7 @@ def serialize_user(user: db_models.User) -> dict:
 
     data = {
         "user_id": user.user_id,
-        "name": user.name,
+        "name": f"{user.first_name} {user.last_name}",
         "email": user.email,
         "phone_num": user.phone_num,
         "role": user.role,
@@ -51,10 +51,10 @@ def serialize_user(user: db_models.User) -> dict:
 def check_user_payload(payload):
     """verifies the user payload"""
 
-    if len(payload.name) > 49:
+    if len(payload.first_name) > 25 or len(payload.last_name) > 25:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="name should be less than 49 characters",
+            detail="name field should be less than 25 characters",
         )
 
     if len(payload.email) > 29:
@@ -230,7 +230,7 @@ class ProfileResponse(BaseModel):
     email: EmailStr
     phone_num: str
     role: str
-    profile_pic: str = None
+    profile_pic: str | None
 
 
 @router.get(
@@ -282,7 +282,7 @@ async def user_details_by_id(
 # temp
 class UserRegistrationToken(BaseModel):
     msg: str
-    status: str = "Unverified"
+    status: str
 
 
 @router.post(

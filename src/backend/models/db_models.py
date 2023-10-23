@@ -24,7 +24,8 @@ class User(Base):
         autoincrement=True,
     )
 
-    name = Column(String(50), nullable=False)
+    first_name = Column(String(25), nullable=False)
+    last_name = Column(String(25), nullable=False)
     email = Column(String(30), index=True, unique=True, nullable=False)
     password = Column(String(150), nullable=False)
     phone_num = Column(String(25), nullable=False)
