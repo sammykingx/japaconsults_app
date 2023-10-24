@@ -149,7 +149,7 @@ async def generate_email_token(
         message = templates.TemplateResponse(
                 "email_verification.html",
                 {
-                    "user": user.name,
+                    "user": f"{user.first_name} {user.last_name}",
                     "email_token": email_token,
                     "request": req,
                 },
@@ -228,7 +228,7 @@ async def verify_user_email(
         )
     return {
         "msg": "User account verified",
-        "name": user.name,
+        "name": f"{user.first_name} {user.last_name}",
         "email": user.email,
         "is_verified": user.is_verified,
     }

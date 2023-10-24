@@ -88,7 +88,7 @@ def save(session: Session, db_table, record):
         print(f"error in save => {err}")
         # send yourself a mail here
         raise DB_EXCEPTION
-    
+
     return data
 
 
@@ -102,10 +102,7 @@ def record_in_lifo(session: Session, db_table, column, **kwargs):
     """
 
     try:
-        record = ( session.query(db_table)
-                .filter_by(**kwargs)
-                .order_by(column.desc())
-            )
+        record = session.query(db_table).filter_by(**kwargs).order_by(column.desc())
 
     except Exception as err:
         raise DB_EXCEPTION

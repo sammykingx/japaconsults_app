@@ -3,8 +3,6 @@ from datetime import date, datetime
 
 
 class RegisterUser(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
     first_name: str
     last_name: str
     email: EmailStr
@@ -13,24 +11,35 @@ class RegisterUser(BaseModel):
     role: str
 
     class Config:
+        from_attributes = True
         json_schema_extra = {
-                "example": {
-                        "first_name": "Test",
-                        "last_name": "user",
-                        "email": "testuser@gmail.com",
-                        "password": "yoursuperStrong!paswword",
-                        "phone_num": "+23480123345654",
-                        "role": "user",
-                    }
+            "example": {
+                "first_name": "Test",
+                "last_name": "user",
+                "email": "testuser@gmail.com",
+                "password": "yoursuperStrong!paswword",
+                "phone_num": "+2348012334554",
+                "role": "user",
             }
+        }
 
 
 class UserProfile:
     user_id: int
     name: str
     email: EmailStr
-    phone_num: str = "+23408078907654"
-    role: str = "user"
+    phone_num: str
+    role: str
+
+    class Config:
+        json_schema_extra = {
+                "example": {
+                    "user_id": 34,
+                    "name": "sammykingx admin",
+                    "email": "youremail@gmail.com",
+                    "phone_num": "+2348091234567",
+                    "role": "staff",}
+            }
 
 
 class ChangeUserRole(BaseModel):
@@ -45,12 +54,12 @@ class CreateDrafts(BaseModel):
     # date_created: datetime
 
     class Config:
-        json_schema_extra  = {
-                    "example": {
-                    "title": "The title of the note",
-                    "content": "The content of the notes. It can be long as possible",
-                }
+        json_schema_extra = {
+            "example": {
+                "title": "The title of the note",
+                "content": "The content of the notes. It can be long as possible",
             }
+        }
 
 
 class UpdateDrafts(BaseModel):
@@ -68,16 +77,16 @@ class CreateInvoice(BaseModel):
     due_date: date
 
     class Config:
-        from_attributes=True
+        from_attributes = True
         json_schema_extra = {
-                "example": {
-                    "title" : "the invoice title",
-                    "desc": "A short description of the invoice",
-                    "price": 2500.12,
-                    "to_email": "user@example.com",
-                    "due_date": "2024-12-31",
-                }
+            "example": {
+                "title": "the invoice title",
+                "desc": "A short description of the invoice",
+                "price": 2500.12,
+                "to_email": "user@example.com",
+                "due_date": "2024-12-31",
             }
+        }
 
 
 class SendMessage(BaseModel):
@@ -90,16 +99,8 @@ class SendMessage(BaseModel):
 
 class UpdateUserInfo(BaseModel):
     user_id: int
-    phone_num: str | None = None
+    phone_num: str | None
     profile_pic: str | None
-
-
-class UpdateDraft(BaseModel):
-    daft_id: int
-    user_id: int
-    publish: bool = False
-    doc_url: dict | None
-    last_updated: datetime
 
 
 class LoginUser(BaseModel):

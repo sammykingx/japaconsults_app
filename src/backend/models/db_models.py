@@ -51,9 +51,7 @@ class User(Base):
 class Drafts(Base):
     __tablename__ = "drafts"
 
-    draft_id = Column(
-        Integer, primary_key=True, index=True, autoincrement=True
-    )
+    draft_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
 
     user_id = Column(Integer, index=True, nullable=False)
     title = Column(String(250), nullable=False)
@@ -81,9 +79,7 @@ class Drafts(Base):
 class Messages(Base):
     __tablename__ = "messages"
 
-    msg_id = Column(
-        Integer, primary_key=True, index=True, autoincrement=True
-    )
+    msg_id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     msg = Column(Text, nullable=False)
     from_id = Column(Integer, nullable=False, index=True)
     to_id = Column(Integer, nullable=False)
@@ -113,9 +109,7 @@ class Messages(Base):
 class Files(Base):
     __tablename__ = "files"
 
-    file_id = Column(
-        String(50), primary_key=True, index=True, nullable=False
-    )
+    file_id = Column(String(50), primary_key=True, index=True, nullable=False)
     name = Column(String(50), nullable=False)
     file_url = Column(String(100), nullable=False)
     owner_id = Column(Integer, nullable=False)
@@ -129,10 +123,8 @@ class Files(Base):
         )
 
     def __str__(self):
-        return (
-            "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
-                self.name, self.file_url, self.owner_id, self.folder
-            )
+        return "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
+            self.name, self.file_url, self.owner_id, self.folder
         )
 
 
@@ -198,13 +190,13 @@ class Payments(Base):
     __tablename__ = "payments"
 
     ref_id = Column(String(15), primary_key=True, nullable=False, index=True)
-    flw_ref  = Column(String(50), nullable=False)
+    flw_ref = Column(String(50), nullable=False)
     flw_txRef = Column(String(20), nullable=False)
     inv_id = Column(
-            String(16),
-            ForeignKey("invoices.inv_id", ondelete="SET DEFAULT"),
-            nullable=False
-        )
+        String(16),
+        ForeignKey("invoices.inv_id", ondelete="SET DEFAULT"),
+        nullable=False,
+    )
     amount = Column(Numeric(precision=15, scale=2), nullable=False)
     paid = Column(Boolean, default=False)
     paid_by = Column(String(30))

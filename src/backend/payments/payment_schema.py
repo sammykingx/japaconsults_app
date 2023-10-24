@@ -11,37 +11,37 @@ class CardPayments(BaseModel):
 
     class Config:
         json_schema_extra = {
-                "example": {
-                        "cardno": "234567890987654",
-                        "expirymonth": "12",
-                        "expiryyear": "34",
-                        "cvv": "324",
-                        "pin": "2345",
-                    }
+            "example": {
+                "cardno": "234567890987654",
+                "expirymonth": "12",
+                "expiryyear": "34",
+                "cvv": "324",
+                "pin": "2345",
             }
+        }
 
 
 class CardResponse(BaseModel):
-    ref_id : str
+    ref_id: str
     validationRequired: bool
 
     class Config:
         json_schema_extra = {
-                "example": {
-                        "ref_id": "REF-12345678903",
-                        "validationRequired": False,
-                    }
+            "example": {
+                "ref_id": "REF-12345678903",
+                "validationRequired": False,
             }
+        }
 
 
 class VerifyCardPayments(BaseModel):
-    ref_id : str
+    ref_id: str
     otp: Annotated[str, Field(strict=True, max_length=8)]
 
     class Config:
         json_schema_extra = {
-                "example": {
-                     "ref_id": "REF-1223455677890",
-                     "otp": "123456",
-                }
+            "example": {
+                "ref_id": "REF-1223455677890",
+                "otp": "123456",
             }
+        }
