@@ -7,7 +7,7 @@ from utils import email_notification, password_hash, verify_number
 from utils import google_drive as cloud
 from typing import Annotated, Dict, List
 from pydantic import BaseModel, EmailStr
-import jwt
+import datetime, jwt
 
 
 router = APIRouter(
@@ -309,6 +309,7 @@ async def register_user(
 
     temp_data = payload.dict().copy()
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
+    temp_data.update(date_joined=datetime.datetime.utcnow())
     db_crud.save(db, db_models.User, temp_data)
     # email_token = oauth2_users.email_verification_token(payload.email)
     # message = templates.TemplateResponse(

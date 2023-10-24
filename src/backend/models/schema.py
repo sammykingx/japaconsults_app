@@ -33,13 +33,14 @@ class UserProfile:
 
     class Config:
         json_schema_extra = {
-                "example": {
-                    "user_id": 34,
-                    "name": "sammykingx admin",
-                    "email": "youremail@gmail.com",
-                    "phone_num": "+2348091234567",
-                    "role": "staff",}
+            "example": {
+                "user_id": 34,
+                "name": "sammykingx admin",
+                "email": "youremail@gmail.com",
+                "phone_num": "+2348091234567",
+                "role": "staff",
             }
+        }
 
 
 class ChangeUserRole(BaseModel):

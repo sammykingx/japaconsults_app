@@ -21,15 +21,15 @@ CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Invalid credentials"
 )
 
-GOOGLE_CLIENT_ID = "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = (
+    "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
+)
 GOOGLE_CLIENT_SECRET = "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"
 REDIRECT_URL = "http://localhost:5000/Oauth/google/callback"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 flow = Flow.from_client_secrets_file(
-    client_secrets_file=os.path.join(
-        pathlib.Path(__file__).parent, "ls_OauthID.json"
-    ),
+    client_secrets_file=os.path.join(pathlib.Path(__file__).parent, "ls_OauthID.json"),
     scopes=[
         "openid",
         "https://www.googleapis.com/auth/userinfo.profile",
@@ -120,7 +120,7 @@ async def generate_email_token(
     mail: EmailStr,
     req: Request,
     db: Annotated[Session, Depends(db_engine.get_db)],
-    verv_type: TokenType
+    verv_type: TokenType,
 ):
     """generate email verification token to email address"""
 
@@ -130,8 +130,8 @@ async def generate_email_token(
         print(f"error at generate_email => {err}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues on email token "\
-                   "generation, check back later",
+            detail="Server encountered some issues on email token "
+            "generation, check back later",
         )
     if not user:
         raise HTTPException(
@@ -140,36 +140,34 @@ async def generate_email_token(
         )
     email_token = oauth2_users.email_verification_token(mail)
 
-    #verv_endpoint = "{}{}{}".format(
+    # verv_endpoint = "{}{}{}".format(
     #    req.url_for("verify_user_email"), "?token=", email_token
-    #)
+    # )
 
     templates = Jinja2Templates(directory="templates")
     if verv_type == TokenType.new_user:
         message = templates.TemplateResponse(
-                "email_verification.html",
-                {
-                    "user": f"{user.first_name} {user.last_name}",
-                    "email_token": email_token,
-                    "request": req,
-                },
-            ).body.decode()
+            "email_verification.html",
+            {
+                "user": f"{user.first_name} {user.last_name}",
+                "email_token": email_token,
+                "request": req,
+            },
+        ).body.decode()
 
-        email_notification.send_email(
-                message, mail, "Account Verification Required"
-            )
+        email_notification.send_email(message, mail, "Account Verification Required")
     else:
         message = templates.TemplateResponse(
-                "changePassword.html",
-                {
-                    "user": user.name,
-                    "email_token": email_token,
-                    "request": req,
-                },
-            ).body.decode()
+            "changePassword.html",
+            {
+                "user": user.name,
+                "email_token": email_token,
+                "request": req,
+            },
+        ).body.decode()
         email_notification.send_email(
             message, mail, "IT'S URGENT - Verify password change"
-            )
+        )
 
     return {"token": email_token}
 
@@ -196,24 +194,20 @@ async def verify_user_email(
     encoded_data = validate_email_token(token)
     INVALID_EMAIL_TOKEN.append(token)
     try:
-        user = (
-            db.query(db_models.User)
-            .filter_by(email=encoded_data["email"])
-            .first()
-        )
+        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
     except Exception as err:
         print(f"err at verify email => {err}")
         raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Server encountered some issues during verification, "
-                       "check back later"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Server encountered some issues during verification, "
+            "check back later",
         )
 
     if user.is_verified:
         raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User already Verified",
-            )
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already Verified",
+        )
     user.is_verified = True
     try:
         db.commit()
@@ -249,13 +243,9 @@ async def change_user_password(
     encoded_data = validate_email_token(payload.token)
     INVALID_EMAIL_TOKEN.append(payload.token)
     try:
-        user = (
-            db.query(db_models.User)
-            .filter_by(email=encoded_data["email"])
-            .first()
-        )
+        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
 
-        user.password = password_hash.hash_pwd(payload.new_pwd)
+        user.password = password_hash.hash_pwd(paylod.new_pwd)
         db.commit()
         db.refresh(user)
 
@@ -296,8 +286,6 @@ async def google_callback(req: Request):
     flow.fetch_token(authorization_response=req.url)
     credentials = flow.credentials
     print(f"credentals {credentials}")
-    user_info = jwt.decode(
-        credentials.id_token, options={"verify_signature": False}
-    )
+    user_info = jwt.decode(credentials.id_token, options={"verify_signature": False})
     print(user_info)
     return {"msg": "not fully implemeted yet"}
