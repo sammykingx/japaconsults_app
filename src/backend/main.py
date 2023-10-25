@@ -4,8 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from models.db_engine import Base, engine
 from models import db_models
 from auth import user_login
-from routes import documents, drafts, invoices, users, messages
-from payments import bank_transfer, card_payments
+from routes import documents, drafts, invoices, users, messages, payments
+from online_payments import bank_transfer, card_payments
 
 
 Base.metadata.create_all(bind=engine)
@@ -37,6 +37,7 @@ app.include_router(invoices.router)
 app.include_router(users.router)
 app.include_router(bank_transfer.router)
 app.include_router(card_payments.router)
+app.include_router(payments.router)
 #app.include_router(messages.router)
 
 

@@ -287,6 +287,41 @@ async def user_recent_files(
     return [file_serializer(record) for record in records if record.size]
 
 
+@router.get(
+    "/allFiles",
+    summary="Returns all files uploaded on the system",
+    description="Should only be used by previledged users in getting all "\
+                "files uploaded to cloud storage.",)
+async def all_files(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """returns all files"""
+
+    if active_user["role"] == "user":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
+
+    records = db_crud.get_all(db, db_models.Files)
+
+    if not records:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="no files uploaded",
+            )
+    # loop
+    user_folders = ("academics", "billing", "contracts", "general", "visa")
+    all_files = {}
+    for folder in user_folders:
+        all_files.update(
+                {f"{folder}": [file_serializer(record) for record in records if record.folder == folder]}
+            )
+
+    return all_files
+
+
 # temp
 class DeleteFile(BaseModel):
     msg: str

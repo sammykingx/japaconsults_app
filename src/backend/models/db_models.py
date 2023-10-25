@@ -32,7 +32,7 @@ class User(Base):
     role = Column(String(20), nullable=False)
     profile_pic = Column(String(100))
     is_verified = Column(Boolean, default=False)
-    # date_joined = Column(DateTime)
+    date_joined = Column(DateTime, nullable=False)
 
     def __repr_(self):
         return "User({}, {},{}, {}, {})".format(

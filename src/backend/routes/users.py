@@ -231,6 +231,9 @@ class ProfileResponse(BaseModel):
     phone_num: str
     role: str
     profile_pic: str | None
+    is_verified: bool
+    date_joined: datetime.datetime | None
+
 
 
 @router.get(

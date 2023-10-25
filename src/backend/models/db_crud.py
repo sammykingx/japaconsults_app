@@ -110,6 +110,18 @@ def record_in_lifo(session: Session, db_table, column, **kwargs):
     return record
 
 
+def all_record_in_lifo(session: Session, db_table, column):
+    """ eturnss all records in lifo"""
+
+    try:
+        record = session.query(db_table).order_by(column.desc())
+
+    except Exception as err:
+        raise DB_EXCEPTION
+
+    return record
+
+
 def delete(session: Session, db_table, **kwargs):
     """Deletes a record from the db table that matches the column id
 
