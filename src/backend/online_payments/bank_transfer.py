@@ -60,7 +60,6 @@ async def start_bank_transfer(
     }
     db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(res))
-    print(res)
     temp_bank_acc = {
         "ref_id": ref_id,
         "bank_name": res["bankName"],
@@ -110,6 +109,7 @@ async def verify_bank_transfer(
     # update payment record
     payment_record.paid = True
     payment_record.paid_by = active_user["name"]
+    payment_record.payer_email = active_user["email"]
     payment_record.paid_at = payment_timestamp
     payment_record.payment_type = "Bank Transfer"
 

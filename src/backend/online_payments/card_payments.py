@@ -134,6 +134,7 @@ async def verify_card_payments(
     # update payments
     payment_record.paid = True
     payment_record.paid_by = active_user["name"]
+    payment_record.payer_email = active_user["email"]
     payment_record.paid_at = payment_timestamp
     payment_record.payment_type = "card"
 

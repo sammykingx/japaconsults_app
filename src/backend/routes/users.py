@@ -44,6 +44,8 @@ def serialize_user(user: db_models.User) -> dict:
         "role": user.role,
         "is_verified": user.is_verified,
         "profile_pic": user.profile_pic,
+        "date_joined": user.date_joined,
+        "last_login": user.last_login,
     }
     return data
 
@@ -83,6 +85,8 @@ class AllUsersResponse(BaseModel):
     role: str
     is_verified: bool
     profile_pic: str | None
+    date_joined: datetime.datetime
+    last_login: datetime.datetime
 
 
 @router.get(
@@ -232,8 +236,7 @@ class ProfileResponse(BaseModel):
     role: str
     profile_pic: str | None
     is_verified: bool
-    date_joined: datetime.datetime | None
-
+    date_joined: datetime.datetime
 
 
 @router.get(

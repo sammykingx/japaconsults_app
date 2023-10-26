@@ -12,7 +12,7 @@ from google_auth_oauthlib.flow import Flow
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr
 from enum import Enum
-import jwt, pathlib, os
+import datetime, jwt, pathlib, os
 
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -70,7 +70,11 @@ def validate_email_token(token: str):
     return encoded_data
 
 
-@router.post("/", response_model=schema.TokenResponse)
+@router.post(
+    "/",
+    summary="Exchange user credentiaals for access token",
+    description="Generates access token for verified users",
+    response_model=schema.TokenResponse)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -88,6 +92,11 @@ async def authenticate_user(
 
     if not password_hash.verify_pwd(form_data.password, user.password):
         raise CREDENTIALS_EXCEPTION
+
+    # update last login
+    user.last_login  = datetime.datetime.utcnow()
+    db.commit()
+    db.refresh(user)
 
     token = oauth2_users.create_token(user)
 

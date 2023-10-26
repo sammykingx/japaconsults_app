@@ -33,6 +33,7 @@ class User(Base):
     profile_pic = Column(String(100))
     is_verified = Column(Boolean, default=False)
     date_joined = Column(DateTime, nullable=False)
+    last_login = Column(DateTime)
 
     def __repr_(self):
         return "User({}, {},{}, {}, {})".format(
@@ -201,5 +202,6 @@ class Payments(Base):
     amount = Column(Numeric(precision=15, scale=2), nullable=False)
     paid = Column(Boolean, default=False)
     paid_by = Column(String(30))
+    payer_email = Column(String(30))
     paid_at = Column(DateTime)
     payment_type = Column(String(15))

@@ -37,7 +37,15 @@ async def app_payments(
                 detail="Unauthorized access to resource",
             )
 
-    records = db_crud.all_record_in_lifo(
+    if active_user["role"] == "user":
+        records = ( db.query(db_models.Payments)
+                    .filter_by(payer_email=active_user["email"])
+                    .order_by(db_models.Payments.paid_at.desc())
+                    .all()
+                )
+    
+    else:
+        records = db_crud.all_record_in_lifo(
             db, db_models.Payments, db_models.Payments.paid_at
         )
 
@@ -61,5 +69,6 @@ def payments_serializer(record):
             "amount": record.amount,
             "paid": record.paid,
             "paid_at": record.paid_at,
+            "payer_email": record.payer_email,
             "payment_type": record.payment_type,
         }
