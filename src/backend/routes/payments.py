@@ -32,18 +32,13 @@ async def app_payments(
     """get all payments records"""
     
     if active_user["role"] == "user":
-        raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unauthorized access to resource",
-            )
-
-    if active_user["role"] == "user":
-        records = ( db.query(db_models.Payments)
-                    .filter_by(payer_email=active_user["email"])
-                    .order_by(db_models.Payments.paid_at.desc())
-                    .all()
+        records = db_crud.filter_record_in_lifo(
+                    db,
+                    db_models.Payments,
+                    db_models.Payments.paid_at,
+                    payer_email=active_user["email"]
                 )
-    
+ 
     else:
         records = db_crud.all_record_in_lifo(
             db, db_models.Payments, db_models.Payments.paid_at

@@ -51,7 +51,13 @@ async def get_all_invoice(
     """get all invoices created"""
 
     if active_user["role"] == "user":
-        records = db_crud.get_by(db, db_models.Invoices, to_email=active_user["email"])
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+                to_email=active_user["email"],
+            )
+
     else:
         records = db_crud.get_all(db, db_models.Invoices)
     is_empty(records)

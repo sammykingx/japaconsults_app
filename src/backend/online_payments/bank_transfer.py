@@ -122,7 +122,6 @@ async def verify_bank_transfer(
     db.refresh(payment_record)
     db.refresh(invoice_record)
 
-    print(res)
     return {
         "msg": "Transfer successfull",
         "transactionComplete": res["transactionComplete"],
