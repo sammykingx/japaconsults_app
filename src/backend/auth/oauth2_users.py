@@ -3,13 +3,14 @@ from dotenv import load_dotenv
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from pydantic import EmailStr
-from models import db_engine, db_models
+from models import db_engine, db_models, redis_db
 from typing import Annotated
 from sqlalchemy.orm import Session
 import jwt, os
 
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
+redis = redis_db.redis_factory()
 
 # change the details to invalid token
 TOKEN_EXCEPTION = HTTPException(
@@ -65,7 +66,7 @@ def token_payload(user) -> dict:
         "role": user.role,
         "img": user.profile_pic,
         "is_verified": user.is_verified,
-        #"date_joined": user.date_joined,
+        # "date_joined": user.date_joined,
     }
     return payload
 
@@ -86,7 +87,8 @@ def create_token(user) -> str:
 def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
     """verify token integrity and returns the user data encoded in token"""
 
-    if token in REVOKED_TOKENS:
+    revoked_tokens = redis.lrange("revoked_tokens", 0, -1)
+    if token in revoked_tokens:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access token",
@@ -110,10 +112,12 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
 def revoke_token(token: str = Depends(oauth2_scheme)) -> None:
     """revokes user token"""
 
-    if token in REVOKED_TOKENS:
+    revoked_tokens = redis.lrange("revoked_tokens", 0, -1)
+    if token in revoked_tokens:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access Token",
         )
 
-    REVOKED_TOKENS.append(token)
+    # REVOKED_TOKENS.append(token)
+    redis.rpush("revoked_tokens", token)

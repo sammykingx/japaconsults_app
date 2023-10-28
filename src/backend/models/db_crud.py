@@ -111,7 +111,7 @@ def record_in_lifo(session: Session, db_table, column, **kwargs):
 
 
 def all_record_in_lifo(session: Session, db_table, column):
-    """ eturnss all records in lifo"""
+    """eturnss all records in lifo"""
 
     try:
         records = session.query(db_table).order_by(column.desc())
@@ -126,10 +126,7 @@ def filter_record_in_lifo(session: Session, db_table, column, **kwargs):
     """filter record in lifo"""
 
     try:
-        records = ( session.query(db_table)
-                   .filter_by(**kwargs)
-                   .order_by(column.desc())
-                )
+        records = session.query(db_table).filter_by(**kwargs).order_by(column.desc())
 
     except Exception as err:
         raise DB_EXCEPTION

@@ -74,7 +74,8 @@ def validate_email_token(token: str):
     "/",
     summary="Exchange user credentiaals for access token",
     description="Generates access token for verified users",
-    response_model=schema.TokenResponse)
+    response_model=schema.TokenResponse,
+)
 async def authenticate_user(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -94,7 +95,7 @@ async def authenticate_user(
         raise CREDENTIALS_EXCEPTION
 
     # update last login
-    user.last_login  = datetime.datetime.utcnow()
+    user.last_login = datetime.datetime.utcnow()
     db.commit()
     db.refresh(user)
 

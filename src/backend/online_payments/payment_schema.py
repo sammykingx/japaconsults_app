@@ -45,3 +45,16 @@ class VerifyCardPayments(BaseModel):
                 "otp": "123456",
             }
         }
+
+
+class BankTransferResponse(BaseModel):
+    ref_id: str
+    bank_name: str
+    bank_account: str
+    expires_in: str
+    messsage: str
+
+
+class VerifyBankTransfer(BaseModel):
+    msg: str
+    transactionComplete: str

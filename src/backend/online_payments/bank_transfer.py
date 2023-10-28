@@ -21,7 +21,13 @@ router = APIRouter(
 )
 
 
-@router.post("/pay")
+@router.post(
+    "/pay",
+    summary="Initiates bank transfer payment method",
+    description="Use this payment method to start bank transfer payments. "
+    "It returns the transaction ref_id and the temp bank details.",
+    response_model=schemas.BankTransferResponse,
+)
 async def start_bank_transfer(
     invoiceId: str,
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -72,9 +78,11 @@ async def start_bank_transfer(
 
 @router.get(
     "/verifyTransfer",
-    summary="To verify all bank transactions transactions",
+    summary="Use this endpoint To verify all bank transfer transactions",
     description="This endpoint is used to verify if a users bank transfer "
-    "successful.",
+    "is successful. You should pass the ref_id gotten from "
+    "the pay endpoint as query params.",
+    response_model=schemas.VerifyBankTransfer,
 )
 async def verify_bank_transfer(
     refId: str,

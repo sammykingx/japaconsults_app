@@ -82,7 +82,7 @@ def file_serializer(record) -> dict:
         "name": record.name,
         "folder": record.folder,
         "file_url": record.file_url,
-        "size": str(record.size / (1024 * 1024)) + " mb",
+        "size": str(record.size) + " bytes",
         "date_uploaded": record.date_uploaded,
     }
 
@@ -261,7 +261,7 @@ async def user_recent_files(
     if folderName:
         if folderName not in FOLDERS:
             raise HTTPException(
-                status_code=status.HTTP_400_BAD_REEQUEST,
+                status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid destination folder",
             )
         records = db_crud.record_in_lifo(
@@ -287,11 +287,21 @@ async def user_recent_files(
     return [file_serializer(record) for record in records if record.size]
 
 
+class fileByFolder(BaseModel):
+    academics: list[dict]
+    billing: list[dict]
+    contracts: list[dict]
+    general: list[dict]
+    visa: list[dict]
+
+
 @router.get(
     "/allFiles",
     summary="Returns all files uploaded on the system",
-    description="Should only be used by previledged users in getting all "\
-                "files uploaded to cloud storage.",)
+    description="Should only be used by previledged users in getting all "
+    "files uploaded to cloud storage.",
+    response_model=fileByFolder,
+)
 async def all_files(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -308,16 +318,22 @@ async def all_files(
 
     if not records:
         raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="no files uploaded",
-            )
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="no files uploaded",
+        )
     # loop
     user_folders = ("academics", "billing", "contracts", "general", "visa")
     all_files = {}
     for folder in user_folders:
         all_files.update(
-                {f"{folder}": [file_serializer(record) for record in records if record.folder == folder]}
-            )
+            {
+                f"{folder}": [
+                    file_serializer(record)
+                    for record in records
+                    if record.folder == folder
+                ]
+            }
+        )
 
     return all_files
 

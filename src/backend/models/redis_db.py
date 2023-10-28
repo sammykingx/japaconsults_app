@@ -11,4 +11,8 @@ def redis_factory():
         max_connections=100,
     )
 
+    # check if key revoke_tokens exist
+    if not redis_client.exists("revoked_tokens"):
+        redis_client.lpush("revoked_tokens", "all revoked tokens")
+
     return redis_client

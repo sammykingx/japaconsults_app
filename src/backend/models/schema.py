@@ -33,7 +33,6 @@ class UserProfile:
     is_verified: bool
     date_joined: datetime | None
 
-
     class Config:
         json_schema_extra = {
             "example": {
@@ -43,7 +42,7 @@ class UserProfile:
                 "phone_num": "+2348091234567",
                 "role": "staff",
                 "is_verified": False,
-                "date_joined":  "2023-12-20  4: 45: 33",
+                "date_joined": "2023-12-20  4: 45: 33",
             }
         }
 

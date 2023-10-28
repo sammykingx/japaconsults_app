@@ -24,7 +24,7 @@ router = APIRouter(
 
 @router.post(
     "/pay",
-    summary="For card payments only",
+    summary="Initiates card payment process for the active user.",
     description="Should be used for processing card payments",
     response_model=schemas.CardResponse,
 )
@@ -85,7 +85,9 @@ async def card_payments(
 @router.post(
     "/verify",
     summary="Used to verify card payments",
-    description="This method is called to verify the users payments",
+    description="This method is called to verify the users payments. The otp "
+    "sent by the user's bank should be sent alongside the payment ref_id "
+    "gotten from pay endpoint.",
 )
 async def verify_card_payments(
     payload: schemas.VerifyCardPayments,
