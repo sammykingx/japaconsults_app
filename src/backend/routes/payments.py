@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import extract
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, schema
@@ -36,8 +37,9 @@ class PaymentResponse(BaseModel):
 @router.get(
     "/all",
     summary="returns all payments record",
-    description="Should be used by previledged users only in seeing "
-    "payment details ",
+    description="Returns all payment records on the platform. Can be used by "
+    "all users irrespective of their roles, the results is been filtered "
+    "internally based on the role type of the active user",
     response_model=list[PaymentResponse],
 )
 async def app_payments(
@@ -59,13 +61,83 @@ async def app_payments(
             db, db_models.Payments, db_models.Payments.paid_at
         )
 
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No payment record found",
-        )
+    #if not records:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_404_NOT_FOUND,
+    #        detail="No payment record found",
+    #    )
+
+    check_record(records)
 
     return [payments_serializer(record) for record in records]
+
+
+@router.get(
+    "/pending",
+    summary="To see all pending payments on the system",
+    description="Use this endpoints to see all pending payments on the "
+    "system, can be used by all user roles.",
+#    response_model=,
+)
+async def pending_payments(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """return all pending payments"""
+
+    if active_user["role"] == "user":
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unathorized access to resource",
+            )
+    
+    records = db_crud.get_by(db, db_models.Payments, paid=False)
+    check_record(records)
+
+    raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Endpoint still in development"
+        )
+    # return pending
+
+
+@router.get(
+    "/totalRevenue",
+    summary="Returns the total revenue on the system",
+    description="Returns the total revenue generated based on month"
+    "should be used by previledged users",)
+async def total_revenue(
+    year: int,
+    month: int| None,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """returns the total revenue"""
+
+    if active_user["role"] == "user":
+        raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Unathorized access to resource",
+            )
+    if year == 0 or year > 12:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="year should be within 1 to 12",
+            )
+
+    raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Endpoint still in development")
+
+
+def check_record(record):
+    """checks if th record is empty"""
+
+    if not records:
+        raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No payment record found",
+            )
 
 
 def payments_serializer(record):

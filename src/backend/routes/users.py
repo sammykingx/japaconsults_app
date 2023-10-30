@@ -85,8 +85,8 @@ class AllUsersResponse(BaseModel):
     role: str
     is_verified: bool
     profile_pic: str | None
-    date_joined: datetime.datetime
-    last_login: datetime.datetime
+    date_joined: datetime.datetime | None
+    last_login: datetime.datetime | None
 
 
 @router.get(

@@ -231,7 +231,10 @@ async def update_invoice(
 
     check_payload(payload)
     record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=payload.inv_id)
+
     is_empty(record)
+    
+    # updaate db record
     record.title = payload.title
     record.desc = payload.desc
     record.price = payload.price
@@ -240,6 +243,7 @@ async def update_invoice(
     record.updated_by = active_user["name"]
     db.commit()
     db.refresh(record)
+
     # send to_email  email on updated invoice
     return {"msg": "Invoice Updated"}
 
@@ -254,7 +258,7 @@ async def manual_invoice_status_update(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """updates the payment status of an invoic to paid"""
+    """updates the payment status of an invoice to paid"""
 
     if active_user["role"] == "user":
         raise HTTPException(
@@ -262,12 +266,28 @@ async def manual_invoice_status_update(
             detail="Unauthorized access to resource",
         )
 
-    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=invoiceId)
-    is_empty(record)
-    record.paid = True
+    invoice_record = db_crud.get_specific_record(
+            db, db_models.Invoices, inv_id=invoiceId
+        )
+
+    is_empty(invoice_record)
+
+    payment_record = db_crud.get_specific_record(
+            db, db_models.Payments, inv_id=invoiceId
+        )
+
+    # update invoice record
+    invoice_record.paid = True
+
+    # update payment record
+    payment_record.paid = True
+
     db.commit()
-    db.refresh(record)
-    return {"msg": "Payment status updated manaually"}
+
+    db.refresh(invoice_record)
+    db.refresh(payment_record)
+
+    return {"msg": "Invoice status updated manaually"}
 
 
 @router.delete(

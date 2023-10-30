@@ -107,6 +107,7 @@ async def verify_bank_transfer(
         )
 
     payment_timestamp = datetime.datetime.utcnow()
+    redis.delete(payload.ref_id)
 
     # get db records
     payment_record = db_crud.get_specific_record(db, db_models.Payments, ref_id=refId)
