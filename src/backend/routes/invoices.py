@@ -59,8 +59,14 @@ async def get_all_invoice(
         )
 
     else:
-        records = db_crud.get_all(db, db_models.Invoices)
+        records = db_crud.all_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+            )
+
     is_empty(records)
+
     data = [invoice_serializer(record) for record in records]
     return data
 
@@ -99,17 +105,32 @@ async def get_pending_invoices(
     """returns all unpaid invoices"""
 
     if active_user["role"] == "user":
-        records = db_crud.get_by(
-            db,
-            db_models.Invoices,
-            to_email=active_user["email"],
-            paid=False,
-        )
+        #records = db_crud.get_by(
+        #    db,
+        #    db_models.Invoices,
+        #    to_email=active_user["email"],
+        #    paid=False,
+        #)
+
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+                paid=False,
+                to_email=active_user["email"],
+            )
 
     else:
-        records = db_crud.get_by(db, db_models.Invoices, paid=False)
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+                paid=False,
+            )
+        #records = db_crud.get_by(db, db_models.Invoices, paid=False)
 
     is_empty(records)
+
     data = [invoice_serializer(record) for record in records]
     return data
 
@@ -117,9 +138,9 @@ async def get_pending_invoices(
 @router.get(
     "/paidInvoice",
     summary="returns all paid invoices",
-    description="Use this endpoint to get all paid invoices both for users and previledged users."
-    "To get all paid invoices by the active user, pass the email of user as query "
-    "parameter.",
+    description="Use this endpoint to get all paid invoices both for users "
+                "and previledged users. To get all paid invoices by the "
+                "active user, pass the email of user as query parameter.",
     response_model=list[InvoiceResponse],
 )
 async def get_paid_invoice(
@@ -129,17 +150,24 @@ async def get_paid_invoice(
     """returns all paid invoices"""
 
     if active_user["role"] == "user":
-        records = db_crud.get_by(
-            db,
-            db_models.Invoices,
-            to_email=active_user["email"],
-            paid=True,
-        )
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+                to_email=active_user["email"],
+                paid=True,
+            )
 
     else:
-        records = db_crud.get_by(db, db_models.Invoices, paid=True)
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Invoices,
+                db_models.Invoices.created_at,
+                paid=True
+            )
 
     is_empty(records)
+
     data = [invoice_serializer(record) for record in records]
     return data
 
@@ -241,6 +269,7 @@ async def update_invoice(
     record.due_date = payload.due_date
     record.updated_at = datetime.utcnow()
     record.updated_by = active_user["name"]
+
     db.commit()
     db.refresh(record)
 

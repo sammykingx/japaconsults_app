@@ -62,6 +62,8 @@ async def start_bank_transfer(
         "flw_txRef": res["txRef"],
         "inv_id": record.inv_id,
         "amount": record.price,
+        "payer_email": active_user["email"],
+        "paid_by": active_user["name"],
         "payment_type": "Bank Transfer",
     }
     db_crud.save(db, db_models.Payments, payment_record)
@@ -107,20 +109,22 @@ async def verify_bank_transfer(
         )
 
     payment_timestamp = datetime.datetime.utcnow()
-    redis.delete(payload.ref_id)
+    redis.delete(refId)
 
     # get db records
-    payment_record = db_crud.get_specific_record(db, db_models.Payments, ref_id=refId)
+    payment_record = db_crud.get_specific_record(
+            db,
+            db_models.Payments,
+            ref_id=refId
+        )
+
     invoice_record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=payment_record.inv_id
-    )
+            db, db_models.Invoices, inv_id=payment_record.inv_id
+        )
 
     # update payment record
     payment_record.paid = True
-    payment_record.paid_by = active_user["name"]
-    payment_record.payer_email = active_user["email"]
     payment_record.paid_at = payment_timestamp
-    payment_record.payment_type = "Bank Transfer"
 
     # update invoice record
     invoice_record.paid = True

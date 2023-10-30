@@ -51,10 +51,10 @@ class BankTransferResponse(BaseModel):
     ref_id: str
     bank_name: str
     bank_account: str
-    expires_in: str
-    messsage: str
+    expires_in: int
+    message: str
 
 
 class VerifyBankTransfer(BaseModel):
     msg: str
-    transactionComplete: str
+    transactionComplete: bool

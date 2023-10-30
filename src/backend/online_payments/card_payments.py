@@ -66,8 +66,10 @@ async def card_payments(
 
     except RaveExceptions.CardChargeError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=err.err["errMsg"]
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err.err["errMsg"]
         )
+
     ref_id = "REF-" + str(round(time.time()))
     new_record = {
         "ref_id": ref_id,
@@ -75,6 +77,8 @@ async def card_payments(
         "flw_txRef": res["txRef"],
         "inv_id": invoiceId,
         "amount": float(record.price),
+        "payer_email": active_user["email"],
+        "paid_by": active_user["name"],
         "payment_type": "card",
     }
     db_crud.save(db, db_models.Payments, new_record)
@@ -135,10 +139,7 @@ async def verify_card_payments(
 
     # update payments
     payment_record.paid = True
-    payment_record.paid_by = active_user["name"]
-    payment_record.payer_email = active_user["email"]
     payment_record.paid_at = payment_timestamp
-    payment_record.payment_type = "card"
 
     # update invoice
     invoice_record.paid = True

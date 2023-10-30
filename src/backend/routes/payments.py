@@ -22,15 +22,23 @@ router = APIRouter(
 )
 
 
-class PaymentResponse(BaseModel):
+class PendingPayments(BaseModel):
     ref_id: str
     rave_txRef: str
     invoice_id: str
+    paid: bool = False
+    payer_email: EmailStr | str
+
+
+class PaymentResponse(PendingPayments, BaseModel):
+    #ref_id: str
+    #rave_txRef: str
+    #invoice_id: str
     paid_by: str | None
     amount: float
-    paid: bool
+    #paid: bool
     paid_at: datetime | None
-    payer_email: EmailStr | str
+    #payer_email: EmailStr | str
     payment_type: str
 
 
@@ -76,8 +84,8 @@ async def app_payments(
     "/pending",
     summary="To see all pending payments on the system",
     description="Use this endpoints to see all pending payments on the "
-    "system, can be used by all user roles.",
-#    response_model=,
+                "system, can be used by all user roles.",
+    response_model=list[PendingPayments],
 )
 async def pending_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -86,19 +94,24 @@ async def pending_payments(
     """return all pending payments"""
 
     if active_user["role"] == "user":
-        raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Unathorized access to resource",
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Payments,
+                db_models.Payments.ref_id,
+                paid=False,
+                payer_email=active_user["email"],
             )
-    
-    records = db_crud.get_by(db, db_models.Payments, paid=False)
-    check_record(records)
 
-    raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Endpoint still in development"
-        )
-    # return pending
+    else:
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Payments,
+                db_models.Payments.ref_id,
+                paid=False
+            )
+
+    check_record(records)
+    return [payments_serializer(record) for record in records]
 
 
 @router.get(
@@ -119,19 +132,37 @@ async def total_revenue(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Unathorized access to resource",
             )
-    if year == 0 or year > 12:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="year should be within 1 to 12",
-            )
+    if month:
+        if month <= 0 or month > 12:
+            raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="month should be within 1 to 12",
+                )
+
+        else:
+            records = ( db.query(db_models.Invoices)
+                        .filter(
+                            extract("month", db_models.Invoices.paid_at) == month,
+                            extract("year", db_models.Invoices.paid_at) == year,
+                            )
+                        .all()
+                    )
+
+    else:
+        records = ( db.query(db_models.Invoices)
+                    .filter(
+                        extract("year", db_models.Invoices.paid_at) == year,
+                        )
+                    .all()
+                )
 
     raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="Endpoint still in development")
 
 
-def check_record(record):
-    """checks if th record is empty"""
+def check_record(records):
+    """checks if the record is empty"""
 
     if not records:
         raise HTTPException(

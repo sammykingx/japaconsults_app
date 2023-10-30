@@ -111,7 +111,7 @@ def record_in_lifo(session: Session, db_table, column, **kwargs):
 
 
 def all_record_in_lifo(session: Session, db_table, column):
-    """eturnss all records in lifo"""
+    """returnss all records in lifo"""
 
     try:
         records = session.query(db_table).order_by(column.desc())
