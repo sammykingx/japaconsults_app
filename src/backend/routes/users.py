@@ -1,4 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    HTTPException,
+    Request,
+    status,
+    UploadFile,
+)
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 from models import db_engine, db_crud, db_models, schema
@@ -114,7 +121,9 @@ async def get_users(
             detail="No users on the system",
         )
 
-    all_users = [serialize_user(user) for user in users if user.is_verified]
+    all_users = [
+        serialize_user(user) for user in users if user.is_verified
+    ]
     return all_users
 
 
@@ -250,7 +259,9 @@ async def user_profile(
 ) -> dict:
     """return the users details"""
 
-    record = db_crud.get_specific_record(db, db_models.User, user_id=token["sub"])
+    record = db_crud.get_specific_record(
+        db, db_models.User, user_id=token["sub"]
+    )
     profile = serialize_user(record)
     return profile
 
@@ -274,7 +285,9 @@ async def user_details_by_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized access to resource",
         )
-    record = db_crud.get_specific_record(db, db_models.User, user_id=userId)
+    record = db_crud.get_specific_record(
+        db, db_models.User, user_id=userId
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -306,7 +319,9 @@ async def register_user(
     """Adds a user to the database"""
 
     check_user_payload(payload)
-    resp = db_crud.get_specific_record(db, db_models.User, email=payload.email)
+    resp = db_crud.get_specific_record(
+        db, db_models.User, email=payload.email
+    )
     if resp:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -363,7 +378,9 @@ async def change_user_role(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid user role selected",
         )
-    record = db_crud.get_specific_record(db, db_models.User, email=payload.user_email)
+    record = db_crud.get_specific_record(
+        db, db_models.User, email=payload.user_email
+    )
     if not record:
         raise HTTPexception(
             status_code=status.HTTP_404_NOT_FOUND, detail="No user found"
@@ -419,7 +436,9 @@ async def user_profile_pic(
         data,
         file.content_type,
     )
-    record = db_crud.get_specific_record(db, db_models.User, user_id=user["sub"])
+    record = db_crud.get_specific_record(
+        db, db_models.User, user_id=user["sub"]
+    )
     record.profile_pic = resp["webViewLink"].removesuffix("?usp=drivesdk")
     try:
         db.commit()

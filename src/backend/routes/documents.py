@@ -101,7 +101,9 @@ def get_user_files(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Invalid folder specified",
             )
-        records = db_crud.get_by(db, table, owner_id=user, folder=folderName)
+        records = db_crud.get_by(
+            db, table, owner_id=user, folder=folderName
+        )
     else:
         records = db_crud.get_by(db, table, owner_id=user)
     if not records:
@@ -215,7 +217,9 @@ async def my_files(
 ):
     """returns all files uploaded by the user"""
 
-    user_files = get_user_files(db, db_models.Files, token["sub"], folderName)
+    user_files = get_user_files(
+        db, db_models.Files, token["sub"], folderName
+    )
     return user_files
 
 
@@ -322,7 +326,13 @@ async def all_files(
             detail="no files uploaded",
         )
     # loop
-    user_folders = ("academics", "billing", "contracts", "general", "visa")
+    user_folders = (
+        "academics",
+        "billing",
+        "contracts",
+        "general",
+        "visa",
+    )
     all_files = {}
     for folder in user_folders:
         all_files.update(
@@ -358,7 +368,9 @@ async def remove_file(
 ):
     """Deletes a file owned by the active user from cloud storage"""
 
-    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
+    record = db_crud.get_specific_record(
+        db, db_models.Files, file_id=fileId
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -383,7 +395,8 @@ async def remove_file(
 @router.delete(
     "/removeUserFile",
     summary="removes files owned by a user",
-    description="Should be used by admin or managers in deleting " "user files",
+    description="Should be used by admin or managers in deleting "
+    "user files",
     response_model=DeleteFile,
 )
 async def remove_user_files(
@@ -399,7 +412,9 @@ async def remove_user_files(
             detail="Unauthorized access to resource",
         )
 
-    record = db_crud.get_specific_record(db, db_models.Files, file_id=fileId)
+    record = db_crud.get_specific_record(
+        db, db_models.Files, file_id=fileId
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

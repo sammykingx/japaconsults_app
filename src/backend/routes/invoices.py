@@ -60,10 +60,10 @@ async def get_all_invoice(
 
     else:
         records = db_crud.all_record_in_lifo(
-                db,
-                db_models.Invoices,
-                db_models.Invoices.created_at,
-            )
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+        )
 
     is_empty(records)
 
@@ -105,29 +105,29 @@ async def get_pending_invoices(
     """returns all unpaid invoices"""
 
     if active_user["role"] == "user":
-        #records = db_crud.get_by(
+        # records = db_crud.get_by(
         #    db,
         #    db_models.Invoices,
         #    to_email=active_user["email"],
         #    paid=False,
-        #)
+        # )
 
         records = db_crud.filter_record_in_lifo(
-                db,
-                db_models.Invoices,
-                db_models.Invoices.created_at,
-                paid=False,
-                to_email=active_user["email"],
-            )
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            paid=False,
+            to_email=active_user["email"],
+        )
 
     else:
         records = db_crud.filter_record_in_lifo(
-                db,
-                db_models.Invoices,
-                db_models.Invoices.created_at,
-                paid=False,
-            )
-        #records = db_crud.get_by(db, db_models.Invoices, paid=False)
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            paid=False,
+        )
+        # records = db_crud.get_by(db, db_models.Invoices, paid=False)
 
     is_empty(records)
 
@@ -139,8 +139,8 @@ async def get_pending_invoices(
     "/paidInvoice",
     summary="returns all paid invoices",
     description="Use this endpoint to get all paid invoices both for users "
-                "and previledged users. To get all paid invoices by the "
-                "active user, pass the email of user as query parameter.",
+    "and previledged users. To get all paid invoices by the "
+    "active user, pass the email of user as query parameter.",
     response_model=list[InvoiceResponse],
 )
 async def get_paid_invoice(
@@ -151,20 +151,20 @@ async def get_paid_invoice(
 
     if active_user["role"] == "user":
         records = db_crud.filter_record_in_lifo(
-                db,
-                db_models.Invoices,
-                db_models.Invoices.created_at,
-                to_email=active_user["email"],
-                paid=True,
-            )
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            to_email=active_user["email"],
+            paid=True,
+        )
 
     else:
         records = db_crud.filter_record_in_lifo(
-                db,
-                db_models.Invoices,
-                db_models.Invoices.created_at,
-                paid=True
-            )
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            paid=True,
+        )
 
     is_empty(records)
 
@@ -192,7 +192,9 @@ async def create_invoice(
         )
 
     check_payload(payload)
-    record = db_crud.get_specific_record(db, db_models.User, email=payload.to_email)
+    record = db_crud.get_specific_record(
+        db, db_models.User, email=payload.to_email
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -258,10 +260,12 @@ async def update_invoice(
         )
 
     check_payload(payload)
-    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=payload.inv_id)
+    record = db_crud.get_specific_record(
+        db, db_models.Invoices, inv_id=payload.inv_id
+    )
 
     is_empty(record)
-    
+
     # updaate db record
     record.title = payload.title
     record.desc = payload.desc
@@ -296,14 +300,14 @@ async def manual_invoice_status_update(
         )
 
     invoice_record = db_crud.get_specific_record(
-            db, db_models.Invoices, inv_id=invoiceId
-        )
+        db, db_models.Invoices, inv_id=invoiceId
+    )
 
     is_empty(invoice_record)
 
     payment_record = db_crud.get_specific_record(
-            db, db_models.Payments, inv_id=invoiceId
-        )
+        db, db_models.Payments, inv_id=invoiceId
+    )
 
     # update invoice record
     invoice_record.paid = True
