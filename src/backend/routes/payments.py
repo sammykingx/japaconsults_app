@@ -32,14 +32,9 @@ class PendingPayments(BaseModel):
 
 
 class PaymentResponse(PendingPayments, BaseModel):
-    # ref_id: str
-    # rave_txRef: str
-    # invoice_id: str
     paid_by: str | None
     amount: float
-    # paid: bool
     paid_at: datetime | None
-    # payer_email: EmailStr | str
     payment_type: str
 
 
@@ -112,17 +107,30 @@ async def pending_payments(
     return [payments_serializer(record) for record in records]
 
 
+class TotalRevenueResponse(BaseModel):
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "2023": {
+                    "September": 234.234,
+                    "October": 1234.234,
+                    "November": 22234.234,
+                    "December": 112434.234,
+                },
+            },
+        }
+
+
 @router.get(
     "/totalRevenue",
     summary="Returns the total revenue on the system",
     description="Returns the total revenue generated based on month"
     "should be used by previledged users",
+    # response_model=TotalRevenueResponse,
 )
 async def total_revenue(
-    year: int,
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
-    month: int | None = None,
 ):
     """returns the total revenue"""
 
@@ -132,24 +140,24 @@ async def total_revenue(
             detail="Unathorized access to resource",
         )
 
-    if month:
-        if month <= 0 or month > 12:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="month should be within 1 to 12",
-            )
+    # if month:
+    #    if month <= 0 or month > 12:
+    #        raise HTTPException(
+    #            status_code=status.HTTP_400_BAD_REQUEST,
+    #            detail="month should be within 1 to 12",
+    #        )
 
-        else:
-            records = (
-                db.query(db_models.Invoices)
-                .filter(
-                    extract("month", db_models.Invoices.paid_at) == month,
-                    extract("year", db_models.Invoices.paid_at) == year,
-                )
-                .all()
-            )
+    #    else:
+    #        records = (
+    #            db.query(db_models.Invoices)
+    #            .filter(
+    #                extract("month", db_models.Invoices.paid_at) == month,
+    #                extract("year", db_models.Invoices.paid_at) == year,
+    #            )
+    #            .all()
+    #        )
 
-    else:
+    try:
         records = (
             db.query(
                 func.extract("year", db_models.Invoices.paid_at).label(
@@ -164,14 +172,23 @@ async def total_revenue(
             .all()
         )
 
-        build_yearly_report(records)
+    except Exception as err:
+        # send mail
+        print(f"Error at total revenue endpoint: {err}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="encountered some issues while processing request",
+        )
 
-    print(records)
+    data = build_yearly_report(records)
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint still in development",
-    )
+    return data
+
+
+class UserTotalSpend(BaseModel):
+    name: str
+    email: EmailStr
+    total_spend: float
 
 
 @router.get(
@@ -179,6 +196,7 @@ async def total_revenue(
     summary="Returns the total amount spent by a user",
     description="Returns the total amount spent by a user on the platform. "
     "should not be used by previledged users",
+    response_model=UserTotalSpend,
 )
 async def user_total_spend(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -192,20 +210,17 @@ async def user_total_spend(
             detail="Unathorized access to resource",
         )
 
-    spent_amount = 0.0
     records = db_crud.get_by(
         db, db_models.Invoices, to_email=active_user["email"], paid=True
     )
 
-    if not records:
-        return {"user": active_user, "total_spend": spent_amount}
+    spent_amount = sum(record.price for record in records if record.paid)
 
-    else:
-        spent_amount = sum(
-            record.price for record in records if record.paid
-        )
-
-    return {"user": active_user, "total_spend": spent_amount}
+    return {
+        "name": active_user["name"],
+        "email": active_user["email"],
+        "total_spend": spent_amount,
+    }
 
 
 def check_record(records):
@@ -237,7 +252,6 @@ def payments_serializer(record):
 def build_yearly_report(records):
     """build reports based on year and month"""
 
-    check_record(records)
     yearly_report = {}
 
     for year, month, amount in records:
