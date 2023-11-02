@@ -13,7 +13,7 @@ router = APIRouter(
     prefix="/payments",
     tags=["Payments"],
     responses={
-        200: {"description": "Successful response"},
+        # 200: {"description": "Successful response"},
         400: {"description": "Missing required data to process request"},
         401: {"description": "Unauthorized access to resource"},
         403: {"description": "Cannot access resource"},
@@ -127,6 +127,21 @@ class TotalRevenueResponse(BaseModel):
     description="Returns the total revenue generated based on month"
     "should be used by previledged users",
     # response_model=TotalRevenueResponse,
+    responses={
+        200: {
+            "content": {
+                "application/json": {
+                    "example": {
+                        "year": {
+                            "janaury": 1345.43,
+                            "febuary": 2098.578,
+                            "march": 308.346,
+                        }
+                    }
+                }
+            },
+        }
+    },
 )
 async def total_revenue(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
