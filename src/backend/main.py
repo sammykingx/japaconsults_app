@@ -6,19 +6,27 @@ from models import db_models
 from auth import user_login
 from routes import documents, drafts, invoices, users, messages, payments
 from online_payments import bank_transfer, card_payments
+from docs import app_doc
 
 
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
         title="Japaconsults User Portal",
-        description="The backend application used to power the japaconsults user app",
+        summary=app_doc.summary,
+        description=app_doc.description,
         version="v1",
         contact={
             "name": "sammykingx",
             "url": "https://sammykingx.com.ng",
             "email": "hello@sammykingx.com.ng",
-            }
+            },
+        license_info={
+            "name": app_doc.license_name,
+            "url": app_doc.license_url,
+            #"identifier": "MIT",
+            },
+        openapi_url="/api/v1/openapi.json",
     )
 
 app.add_middleware(
