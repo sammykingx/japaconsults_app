@@ -183,6 +183,7 @@ async def total_revenue(
                 ),
                 func.sum(db_models.Invoices.price).label("amount"),
             )
+            .filter(db_models.Invoices.paid == True)
             .group_by("year", "month")
             .all()
         )
