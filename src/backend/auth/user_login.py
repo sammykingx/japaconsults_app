@@ -4,7 +4,7 @@ from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from models import db_engine, db_models, schema
+from models import db_crud, db_engine, db_models, schema
 from utils import email_notification, password_hash
 from auth import oauth2_users
 from typing import Annotated
@@ -12,6 +12,12 @@ from google_auth_oauthlib.flow import Flow
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr
 from enum import Enum
+from docs.auth import (
+    generate_email_token,
+    verify_email,
+    password_change,
+    logout,
+)
 import datetime, jwt, pathlib, os
 
 
@@ -49,7 +55,7 @@ def validate_email_token(token: str):
     if token in INVALID_EMAIL_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid email verification token",
+            detail="Invalid verification token",
         )
     load_dotenv()
     try:
@@ -60,7 +66,7 @@ def validate_email_token(token: str):
     except jwt.ExpiredSignatureError:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="expired email verification token",
+            detail="expired verification token",
         )
     except Exception as err:
         raise HTTPException(
@@ -72,7 +78,7 @@ def validate_email_token(token: str):
 
 @router.post(
     "/",
-    summary="Exchange user credentiaals for access token",
+    summary="Exchange user credentials for access token",
     description="Generates access token for verified users",
     response_model=schema.TokenResponse,
 )
@@ -82,11 +88,15 @@ async def authenticate_user(
 ):
     """authenticates a user based on details sent and returns a token"""
 
-    user = (
-        db.query(db_models.User)
-        .filter(db_models.User.email == form_data.username)
-        .first()
-    )
+    #user = (
+    #    db.query(db_models.User)
+    #    .filter(db_models.User.email == form_data.username)
+    #    .first()
+    #)
+
+    user = db_crud.get_specific_record(
+            db, db_models.User, email=form_data.username
+        )
 
     if not user:
         raise CREDENTIALS_EXCEPTION
@@ -125,6 +135,7 @@ class TokenType(Enum):
     description="Use this endpoint to generate tokens for forget "
     "password as well as email verification",
     response_model=ResponseToken,
+    responses=generate_email_token.response_codes,
 )
 async def generate_email_token(
     mail: EmailStr,
@@ -170,7 +181,7 @@ async def generate_email_token(
         message = templates.TemplateResponse(
             "changePassword.html",
             {
-                "user": user.name,
+                "user": f"{user.first_name} {user.last_name}",
                 "email_token": email_token,
                 "request": req,
             },
@@ -190,10 +201,9 @@ class VerifyEmail(BaseModel):
 @router.get(
     "/verifyEmail",
     summary="verify user email",
-    description="Verify's the user email provided",
+    description="Verify's the user email encoded in token",
+    responses=verify_email.response_codes
 )
-# async def verify_user_email(
-#            payload: VerifyEmail, db: Annotated[Session, Depends(db_engine.get_db)]):
 async def verify_user_email(
     token: str, db: Annotated[Session, Depends(db_engine.get_db)]
 ):
@@ -203,14 +213,9 @@ async def verify_user_email(
 
     encoded_data = validate_email_token(token)
     INVALID_EMAIL_TOKEN.append(token)
-    try:
-        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
-    except Exception as err:
-        print(f"err at verify email => {err}")
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues during verification, "
-            "check back later",
+
+    user = db_crud.get_specific_record(
+            db, db_models.User, email=encoded_data["email"]
         )
 
     if user.is_verified:
@@ -218,7 +223,9 @@ async def verify_user_email(
             status_code=status.HTTP_409_CONFLICT,
             detail="User already Verified",
         )
+
     user.is_verified = True
+    
     try:
         db.commit()
         db.refresh(user)
@@ -230,6 +237,7 @@ async def verify_user_email(
             detail="Server encountered some issues during verification, "
             "check back later or contact administrator",
         )
+
     return {
         "msg": "User account verified",
         "name": f"{user.first_name} {user.last_name}",
@@ -243,7 +251,10 @@ class ChangePassword(BaseModel):
     new_pwd: str
 
 
-@router.patch("/changePassword", summary="Changes the user password")
+@router.patch(
+    "/changePassword",
+    summary="Changes the user password",
+    responses=password_change.response_codes)
 async def change_user_password(
     payload: ChangePassword,
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -252,14 +263,19 @@ async def change_user_password(
 
     encoded_data = validate_email_token(payload.token)
     INVALID_EMAIL_TOKEN.append(payload.token)
-    try:
-        user = db.query(db_models.User).filter_by(email=encoded_data["email"]).first()
 
-        user.password = password_hash.hash_pwd(paylod.new_pwd)
+    user = db_crud.get_specific_record(
+            db, db_models.User, email=encoded_data["email"]
+        )
+
+    user.password = password_hash.hash_pwd(payload.new_pwd)
+
+    try:
         db.commit()
         db.refresh(user)
 
     except Exception as err:
+        print(f"Error while changing users pwd: {err}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Server encountered some issues, check back later",
@@ -268,7 +284,10 @@ async def change_user_password(
     return {"msg": "succesful"}
 
 
-@router.get("/logout", summary="Invalidates the user token")
+@router.get(
+    "/logout",
+    summary="Invalidates the user token",
+    responses=logout.response_codes)
 async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     """revokes the user token"""
 
