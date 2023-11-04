@@ -21,7 +21,7 @@ from docs.auth import (
 import datetime, jwt, pathlib, os
 
 
-router = APIRouter(prefix="/auth", tags=["Auth"])
+router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Invalid credentials"

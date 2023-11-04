@@ -36,17 +36,22 @@ class User(Base):
     last_login = Column(DateTime)
 
     def __repr_(self):
-        return "User({}, {},{}, {}, {})".format(
-            self.name,
+        return "User({}, {},{}, {}, {}, {})".format(
+            self.first_name,
+            self.last_name,
             self.email,
             self.password,
             self.phone_num,
             self.role,
+            self.date_joined,
         )
 
     def __str__(self):
         return "name: {}, email: {}, phone_num: {}, role: {}".format(
-            self.name, self.email, self.phone_num, self.role
+            self.first_name + self.last_name,
+            self.email,
+            self.phone_num,
+            self.role,
         )
 
 

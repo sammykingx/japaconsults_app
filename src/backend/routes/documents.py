@@ -13,6 +13,7 @@ from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
 from enum import Enum
+from docs.routes import documents
 import datetime
 
 
@@ -123,9 +124,10 @@ def get_user_files(
     "/upload",
     summary="Takes a list of files and uploads to google cloud storage",
     description="folder_name should be the name of the folder to upload to "
-    "While the file should contain a list of file object.\n"
-    "folder name: academics, billing, contract, general, visa",
+                "While the file should contain a list of file object."
+                "folder name: academics, billing, contract, general, visa",
     response_model=UploadedFileResponse,
+    responses=documents.upload_response_codes,
 )
 async def upload_documents(
     folder_name: str,
@@ -421,11 +423,11 @@ async def remove_user_files(
             detail="No file found for user",
         )
 
-    if token["role"] != "manager":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized user",
-        )
+    #if token["role"] != "manager":
+    #    raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED,
+    #        detail="Unauthorized user",
+    #    )
 
     db_crud.delete(db, db_models.Files, file_id=fileId)
     cloud.delete_files(fileId)

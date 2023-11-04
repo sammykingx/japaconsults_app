@@ -71,18 +71,19 @@ The sign up process is done in 3 easy steps, within 3mins
         - *`new_pwd`*: The new users password
 
     - __example_request__:
-        - __Using curl__:
-        ```curl
-            curl -X 'PATCH'\n
-                \t'japaconsults.sammykingx.tech/auth/changePassword' \n
-                \t-H 'accept: application/json' \n
-                \t-H 'Content-Type: application/json' \n
-                \t-d '{
-                        "token": "user_token",
-                        "new_pwd": "string",
-            }'
+        - __Using curl__:\n
+```curl
 
-        ```
+ curl -X 'PATCH'\n
+\t'japaconsults.sammykingx.tech/auth/changePassword' \n
+\t-H 'accept: application/json' \n
+\t-H 'Content-Type: application/json' \n
+\t-d '{
+\t\t"token": "user_token",
+\t\t"new_pwd": "string",
+\t}'
+
+```
         - *`japaconsults.sammykingx.tech/auth/changePassword`*
 
 - `/auth/logout`:
@@ -92,6 +93,13 @@ The sign up process is done in 3 easy steps, within 3mins
 
 
 ### Documents
+- `/documents/upload`:
+    - __Description__: Uploads a file to google drive cloud storage.
+
+    - __Action__:
+
+    - __Usage__:
+
 
 ### Notes
 
