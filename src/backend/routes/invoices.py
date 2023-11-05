@@ -308,12 +308,20 @@ async def manual_invoice_status_update(
     payment_record = db_crud.get_specific_record(
         db, db_models.Payments, inv_id=invoiceId
     )
+    if not payment_record:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No existing transaction ref for invoice",
+            )
+    payment_timestamp = datetime.utcnow()
 
     # update invoice record
     invoice_record.paid = True
+    invoice_record.paid_at = payment_timestamp
 
     # update payment record
     payment_record.paid = True
+    payment_record.paid_at = payment_timestamp
 
     db.commit()
 
