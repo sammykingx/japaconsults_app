@@ -4,8 +4,8 @@ from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
-from models import db_crud, db_engine, db_models, schema
-from utils import email_notification, password_hash
+from models import db_crud, db_engine, db_models, redis_db, schema
+from utils import email_notification, password_hash, redis_user_token
 from auth import oauth2_users
 from typing import Annotated
 from google_auth_oauthlib.flow import Flow
@@ -52,11 +52,12 @@ INVALID_EMAIL_TOKEN = []
 def validate_email_token(token: str):
     """checks if the email token received is still valid"""
 
-    if token in INVALID_EMAIL_TOKEN:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid verification token",
-        )
+    # if token in INVALID_EMAIL_TOKEN:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_403_FORBIDDEN,
+    #        detail="Invalid verification token",
+    #    )
+    
     load_dotenv()
     try:
         encoded_data = jwt.decode(
@@ -68,13 +69,18 @@ def validate_email_token(token: str):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="expired verification token",
         )
+
     except Exception as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid request credentials",
         )
+
     return encoded_data
 
+class demo(BaseModel):
+    username: str
+    paassword: str
 
 @router.post(
     "/",
@@ -87,12 +93,6 @@ async def authenticate_user(
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """authenticates a user based on details sent and returns a token"""
-
-    #user = (
-    #    db.query(db_models.User)
-    #    .filter(db_models.User.email == form_data.username)
-    #    .first()
-    #)
 
     user = db_crud.get_specific_record(
             db, db_models.User, email=form_data.username
@@ -115,11 +115,6 @@ async def authenticate_user(
 
 
 # temp
-class SendMailToken(BaseModel):
-    email: EmailStr
-
-
-# temp
 class ResponseToken(BaseModel):
     token: str
 
@@ -133,7 +128,7 @@ class TokenType(Enum):
     "/generate/emailToken",
     summary="Generates email verification token to verify email",
     description="Use this endpoint to generate tokens for forget "
-    "password as well as email verification",
+                "password as well as email verification",
     response_model=ResponseToken,
     responses=generate_email_token.response_codes,
 )
@@ -145,22 +140,34 @@ async def generate_email_token(
 ):
     """generate email verification token to email address"""
 
-    try:
-        user = db.query(db_models.User).filter_by(email=mail).first()
-    except Exception as err:
-        print(f"error at generate_email => {err}")
+    #try:
+    #    user = db.query(db_models.User).filter_by(email=mail).first()
+    #except Exception as err:
+    #    print(f"error at generate_email => {err}")
+    #    raise HTTPException(
+    #        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+    #        detail="Server encountered some issues on email token "
+    #        "generation, check back later",
+    #    )
+
+    redis = redis_db.redis_factory()
+    key = mail + ":email_token"
+    if redis.exists(key):
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Server encountered some issues on email token "
-            "generation, check back later",
-        )
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already has an active validation token",
+            )
+
+    user = db_crud.get_specific_record(db, db_models.User, email=mail)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No user account found",
         )
+    
     email_token = oauth2_users.email_verification_token(mail)
-
+    redis_user_token.add_email_token(key, email_token)
+    
     # verv_endpoint = "{}{}{}".format(
     #    req.url_for("verify_user_email"), "?token=", email_token
     # )
@@ -212,17 +219,23 @@ async def verify_user_email(
     """
 
     encoded_data = validate_email_token(token)
-    INVALID_EMAIL_TOKEN.append(token)
+    key = encoded_data["email"] + ":email_token"
+    redis = redis_db.redis_factory()
+    if not redis.exists(key):
+        raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User already Verified",
+            )
 
     user = db_crud.get_specific_record(
             db, db_models.User, email=encoded_data["email"]
         )
 
-    if user.is_verified:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail="User already Verified",
-        )
+    #if user.is_verified:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_409_CONFLICT,
+    #        detail="User already Verified",
+    #    )
 
     user.is_verified = True
     
@@ -238,6 +251,7 @@ async def verify_user_email(
             "check back later or contact administrator",
         )
 
+    redis.delete(key)
     return {
         "msg": "User account verified",
         "name": f"{user.first_name} {user.last_name}",
@@ -262,7 +276,16 @@ async def change_user_password(
     """Updates the user password"""
 
     encoded_data = validate_email_token(payload.token)
-    INVALID_EMAIL_TOKEN.append(payload.token)
+    #INVALID_EMAIL_TOKEN.append(payload.token)
+
+    key = encoded_data["email"] + ":email_token"
+    redis = redis_db.redis_factory()
+    if not redis.exists(key):
+        raise HTTPException(
+                #status_code=status.HTTP_409_CONFLICT,
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passowrd already changed",
+          )
 
     user = db_crud.get_specific_record(
             db, db_models.User, email=encoded_data["email"]
@@ -281,6 +304,7 @@ async def change_user_password(
             detail="Server encountered some issues, check back later",
         )
 
+    redis.delete(key)
     return {"msg": "succesful"}
 
 
