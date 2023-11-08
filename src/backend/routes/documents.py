@@ -124,8 +124,8 @@ def get_user_files(
     "/upload",
     summary="Takes a list of files and uploads to google cloud storage",
     description="folder_name should be the name of the folder to upload to "
-                "While the file should contain a list of file object."
-                "folder name: academics, billing, contract, general, visa",
+    "While the file should contain a list of file object."
+    "folder name: academics, billing, contract, general, visa",
     response_model=UploadedFileResponse,
     responses=documents.upload_response_codes,
 )
@@ -423,7 +423,7 @@ async def remove_user_files(
             detail="No file found for user",
         )
 
-    #if token["role"] != "manager":
+    # if token["role"] != "manager":
     #    raise HTTPException(
     #        status_code=status.HTTP_401_UNAUTHORIZED,
     #        detail="Unauthorized user",

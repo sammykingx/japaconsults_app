@@ -7,6 +7,7 @@ from rave_python import Misc, RaveExceptions
 from typing import Annotated
 import datetime, time
 import json
+from online_payments import payments_utils
 import online_payments.payment_schema as schemas
 
 
@@ -25,7 +26,8 @@ router = APIRouter(
     "/pay",
     summary="Initiates bank transfer payment method",
     description="Use this payment method to start bank transfer payments. "
-    "It returns the transaction ref_id and the temp bank details.",
+                "It returns the transaction ref_id and the temporay bank "
+                "details the user should make payments to.",
     response_model=schemas.BankTransferResponse,
 )
 async def start_bank_transfer(
@@ -33,14 +35,17 @@ async def start_bank_transfer(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """initaite bank transfer"""
+    """initiate bank transfer"""
 
     record = check_invoice(db, invoiceId)
-    if record.to_email != active_user["email"]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invoice not assinged to active user",
-        )
+    # if record.to_email != active_user["email"]:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_400_BAD_REQUEST,
+    #        detail="Invoice not assinged to active user",
+    #    )
+
+    payments_utils.check_invoice_records(record, active_user)
+
     first_name, last_name = active_user["name"].split(" ")
     data = {
         "firstname": first_name,
@@ -48,13 +53,16 @@ async def start_bank_transfer(
         "email": active_user["email"],
         "amount": float(record.price),
     }
+
     try:
         res = rave_pay.BankTransfer.charge(data)
 
     except RaveExceptions.TransactionChargeError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=err.err["errMsg"]
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err.err["errMsg"],
         )
+
     ref_id = "REF-" + str(round(time.time()))
     payment_record = {
         "ref_id": ref_id,
@@ -75,6 +83,8 @@ async def start_bank_transfer(
         "expires_in": res["expiresIn"],
         "message": res["transferNote"],
     }
+    #print(temp_bank_acc)
+    #print(type(temp_bank_acc["expires_in"]))
     return temp_bank_acc
 
 
@@ -113,14 +123,12 @@ async def verify_bank_transfer(
 
     # get db records
     payment_record = db_crud.get_specific_record(
-            db,
-            db_models.Payments,
-            ref_id=refId
-        )
+        db, db_models.Payments, ref_id=refId
+    )
 
     invoice_record = db_crud.get_specific_record(
-            db, db_models.Invoices, inv_id=payment_record.inv_id
-        )
+        db, db_models.Invoices, inv_id=payment_record.inv_id
+    )
 
     # update payment record
     payment_record.paid = True
@@ -144,7 +152,9 @@ async def verify_bank_transfer(
 def check_invoice(db: Session, invoiceId: str) -> db_models.Invoices:
     """check if the invoice is existing in the db"""
 
-    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=invoiceId)
+    record = db_crud.get_specific_record(
+        db, db_models.Invoices, inv_id=invoiceId
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -102,7 +102,11 @@ def record_in_lifo(session: Session, db_table, column, **kwargs):
     """
 
     try:
-        record = session.query(db_table).filter_by(**kwargs).order_by(column.desc())
+        record = (
+            session.query(db_table)
+            .filter_by(**kwargs)
+            .order_by(column.desc())
+        )
 
     except Exception as err:
         raise DB_EXCEPTION
@@ -126,7 +130,11 @@ def filter_record_in_lifo(session: Session, db_table, column, **kwargs):
     """filter record in lifo"""
 
     try:
-        records = session.query(db_table).filter_by(**kwargs).order_by(column.desc())
+        records = (
+            session.query(db_table)
+            .filter_by(**kwargs)
+            .order_by(column.desc())
+        )
 
     except Exception as err:
         raise DB_EXCEPTION

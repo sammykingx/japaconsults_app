@@ -7,6 +7,7 @@ from rave_python import Misc, RaveExceptions
 from typing import Annotated
 import datetime, time
 import json
+from online_payments import payments_utils
 import online_payments.payment_schema as schemas
 
 
@@ -17,7 +18,9 @@ router = APIRouter(
     tags=["card Paymemnts"],
     responses={
         200: {"description": "Successfule Request"},
-        400: {"description": "Missing required or Invalid data in request"},
+        400: {
+            "description": "Missing required or Invalid data in request"
+        },
     },
 )
 
@@ -38,12 +41,17 @@ async def card_payments(
 
     # check payload
 
-    record = db_crud.get_specific_record(db, db_models.Invoices, inv_id=invoiceId)
+    record = db_crud.get_specific_record(
+        db, db_models.Invoices, inv_id=invoiceId
+    )
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No matching invoice found, check invoice id",
         )
+
+    # ensures the invoice is paid by the intended user
+    payments_utils.check_invoice_records(record, active_user)
 
     card_details = payload.model_dump().copy()
     card_details.update(
@@ -67,7 +75,7 @@ async def card_payments(
     except RaveExceptions.CardChargeError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=err.err["errMsg"]
+            detail=err.err["errMsg"],
         )
 
     ref_id = "REF-" + str(round(time.time()))
@@ -83,7 +91,10 @@ async def card_payments(
     }
     db_crud.save(db, db_models.Payments, new_record)
     redis.set(ref_id, json.dumps(res))
-    return {"ref_id": ref_id, "validationRequired": res["validationRequired"]}
+    return {
+        "ref_id": ref_id,
+        "validationRequired": res["validationRequired"],
+    }
 
 
 @router.post(
@@ -121,11 +132,13 @@ async def verify_card_payments(
 
     except RaveExceptions.TransactionValidationError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=err.err["errMsg"]
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err.err["errMsg"],
         )
     except RaveExceptions.TransactionVerificationError as err:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=err.err["errMsg"]
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err.err["errMsg"],
         )
     # get successfull payment timestamp
     payment_timestamp = datetime.datetime.utcnow()

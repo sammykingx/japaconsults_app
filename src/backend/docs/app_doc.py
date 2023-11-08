@@ -53,7 +53,7 @@ The sign up process is done in 3 easy steps, within 3mins
     - __Description__: Verify's the users email address encoded on the verification token.
 
     - __Action__: The token is recievd from the request and then validated, upond successfull token validation the __request user__ email encoded in the token is verified. In a situation where by the token validation fails, an __HTTP 400 status code__ is returned with the appropriate reason in the *`detail`* parameter.
-    Their might be situations where by the __request_user__ email has already been verified from a __previous request verification initaited__. In this case, a __409 HTTP status code__ is returned with the message in the *`detail`* parameter.
+    Their might be situations where by the __request_user__ email has already been verified from a __previous request verification initaited__. In this case, a __400 HTTP status code__ is returned with the message in the *`detail`* parameter.
 
     - __Usage__: The email token gotten from the `/auth/generate/emailToken` endpoint is passed as query paremeter.
 

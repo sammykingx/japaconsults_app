@@ -158,9 +158,8 @@ async def all_users(
 @router.get(
     "/staffs",
     summary="Returns all accounts of type 'staff'",
-    description="This endpoint allows you to get all account "
-    "with role 'staff'. Should not be used by users "
-    "with role type 'user'",
+    description="This endpoint allows you to get all account with "
+    "role 'staff'.",
     response_model=list[AllUsersResponse],
 )
 async def all_staffs(
@@ -169,11 +168,11 @@ async def all_staffs(
 ):
     """get all staffs"""
 
-    if user["role"] == "user":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access to resource",
-        )
+    # if user["role"] == "user":
+    #    raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED,
+    #        detail="Unauthorized access to resource",
+    #    )
 
     records = db_crud.get_by(db, db_models.User, role="staff")
     if not records:
@@ -187,7 +186,8 @@ async def all_staffs(
 @router.get(
     "/managers",
     summary="Returns all user accounts of role type 'manager'",
-    description="Should be used by admin or managers only",
+    description="returns a list of objects containing all users "
+    "with role type 'manager'.",
     response_model=list[AllUsersResponse],
 )
 async def all_managers(
@@ -196,11 +196,11 @@ async def all_managers(
 ):
     """returns all managers"""
 
-    if user["role"] in ("staff", "user"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access to resource",
-        )
+    # if user["role"] in ("staff", "user"):
+    #    raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED,
+    #        detail="Unauthorized access to resource",
+    #    )
 
     records = db_crud.get_by(db, db_models.User, role="manager")
     if not records:
@@ -214,7 +214,7 @@ async def all_managers(
 @router.get(
     "/allAdmin",
     summary="Returns all administrators",
-    description="This endpoint should only be used by admin",
+    description="Returns all administrators on the system",
     response_model=list[AllUsersResponse],
 )
 async def all_admins(
@@ -223,11 +223,11 @@ async def all_admins(
 ):
     """get all admins"""
 
-    if user["role"] != "admin":
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access to resource",
-        )
+    # if user["role"] != "admin":
+    #    raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED,
+    #        detail="Unauthorized access to resource",
+    #    )
 
     records = db_crud.get_by(db, db_models.User, role="admin")
     if not records:

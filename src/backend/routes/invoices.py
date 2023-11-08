@@ -308,11 +308,13 @@ async def manual_invoice_status_update(
     payment_record = db_crud.get_specific_record(
         db, db_models.Payments, inv_id=invoiceId
     )
+
     if not payment_record:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="No existing transaction ref for invoice",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="No existing transaction ref for invoice",
+        )
+
     payment_timestamp = datetime.utcnow()
 
     # update invoice record
@@ -371,6 +373,12 @@ def check_payload(payload: schema.CreateInvoice) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Number of digits of decimal must be less than 2",
         )
+
+    if payload.due_date < date.today():
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Due date must be greater than current date",
+            )
 
 
 def is_empty(data: db_models.Invoices):
