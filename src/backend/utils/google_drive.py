@@ -18,7 +18,9 @@ def create_drive_api():
     from google.auth import exceptions
     import os, pathlib
 
-    acc_json_file = os.path.join(pathlib.Path(__file__).parent, "japaconsults-gcs.json")
+    acc_json_file = os.path.join(
+        pathlib.Path(__file__).parent, "japaconsults-gcs.json"
+    )
     acc_cred = service_account.Credentials.from_service_account_file(
         acc_json_file, scopes=["https://www.googleapis.com/auth/drive"]
     )
@@ -57,7 +59,11 @@ def create_folder(folder: str, parent_id: str = None):
         folder_metadata.update({"parents": [parent_id]})
 
     try:
-        resp = drive.files().create(body=folder_metadata, fields="id").execute()
+        resp = (
+            drive.files()
+            .create(body=folder_metadata, fields="id")
+            .execute()
+        )
 
     except errors.HttpError:
         raise DRIVE_EXCEPTION
@@ -79,12 +85,18 @@ def folder_permission(action: str, folder_id: str, email: EmailStr):
     """
 
     drive = create_drive_api()
-    permissions = {"role": "reader", "type": "user", "emailAddress": email}
+    permissions = {
+        "role": "reader",
+        "type": "user",
+        "emailAddress": email,
+    }
 
     if action == "create":
         try:
             resp = (
-                drive.permissions().create(fileId=folder_id, body=permissions).execute()
+                drive.permissions()
+                .create(fileId=folder_id, body=permissions)
+                .execute()
             )
         except errors.HttpError as err:
             if err.resp.status == 400:
@@ -108,7 +120,9 @@ def file_permissions(drive, file_id):
 
     try:
         permission_resp = (
-            drive.permissions().create(fileId=file_id, body=file_rights).execute()
+            drive.permissions()
+            .create(fileId=file_id, body=file_rights)
+            .execute()
         )
 
     except errors.HttpError:
@@ -127,7 +141,9 @@ def upload_file(fldr_id: str, name: str, data, mime_type: str) -> str:
 
     drive = create_drive_api()
     file_metadata = {"name": name, "parents": [fldr_id]}
-    blob = http.MediaIoBaseUpload(io.BytesIO(data), mimetype=mime_type, resumable=False)
+    blob = http.MediaIoBaseUpload(
+        io.BytesIO(data), mimetype=mime_type, resumable=False
+    )
     try:
         file = (
             drive.files()
@@ -163,7 +179,9 @@ def list_files(folder: bool = False):
             # list only folders
             files = (
                 drive.files()
-                .list(q="mimeType = 'application/vnd.google-apps.folder'")
+                .list(
+                    q="mimeType = 'application/vnd.google-apps.folder'"
+                )
                 .execute()
             )
     except errors.HttpError:

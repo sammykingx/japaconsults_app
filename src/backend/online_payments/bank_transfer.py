@@ -22,7 +22,7 @@ router = APIRouter(
 )
 
 
-@router.post(
+@router.get(
     "/pay",
     summary="Initiates bank transfer payment method",
     description="Use this payment method to start bank transfer payments. "
@@ -37,15 +37,18 @@ async def start_bank_transfer(
 ):
     """initiate bank transfer"""
 
-    record = check_invoice(db, invoiceId)
+    # record = check_invoice(db, invoiceId)
     # if record.to_email != active_user["email"]:
     #    raise HTTPException(
     #        status_code=status.HTTP_400_BAD_REQUEST,
     #        detail="Invoice not assinged to active user",
     #    )
 
-    payments_utils.check_invoice_records(record, active_user)
+    # record = db_crud.get_specific_record(
+    #        db, db_models.Invoices, inv_id=invoiceId
+    #    )
 
+    record = payments_utils.get_invoice(db, active_user, invoiceId)
     first_name, last_name = active_user["name"].split(" ")
     data = {
         "firstname": first_name,
@@ -83,8 +86,10 @@ async def start_bank_transfer(
         "expires_in": res["expiresIn"],
         "message": res["transferNote"],
     }
+
     #print(temp_bank_acc)
     #print(type(temp_bank_acc["expires_in"]))
+
     return temp_bank_acc
 
 

@@ -9,7 +9,7 @@ redis = redis_db.redis_factory()
 
 def add_email_token(key, token: str, expires_in=1800):
     """add's the users email token to redis and then sets the expiration time
-    
+
     key: the key to be stored
     token: the value of the key
     expires_in: the expiration time in seconds

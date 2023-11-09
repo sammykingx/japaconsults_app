@@ -19,7 +19,7 @@ router = APIRouter(
     responses={
         200: {"description": "Successfule Request"},
         400: {
-            "description": "Missing required or Invalid data in request"
+            "description": "Missing required/Invalid data in request"
         },
     },
 )
@@ -41,17 +41,18 @@ async def card_payments(
 
     # check payload
 
-    record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=invoiceId
-    )
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No matching invoice found, check invoice id",
-        )
+    # record = db_crud.get_specific_record(
+    #    db, db_models.Invoices, inv_id=invoiceId
+    #)
 
-    # ensures the invoice is paid by the intended user
-    payments_utils.check_invoice_records(record, active_user)
+    # if not record:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_404_NOT_FOUND,
+    #        detail="No matching invoice found, check invoice id",
+    #    )
+
+    # gets and perform checks on the invoice ID
+    record = payments_utils.get_invoice(db, active_user, invoiceId)
 
     card_details = payload.model_dump().copy()
     card_details.update(

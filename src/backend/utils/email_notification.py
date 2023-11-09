@@ -1,7 +1,7 @@
 from email.message import EmailMessage
 
 # from email.mime.multipart import MIMEMultipart
-#from email.mime.text import MIMEText
+# from email.mime.text import MIMEText
 
 from fastapi import HTTPException, status
 from dotenv import load_dotenv
@@ -30,30 +30,34 @@ def send_email(message, to_addr, subject, attachment=None):
             os.getenv("SMTP_HOST"), os.getenv("SMTP_PORT"), timeout=5
         ) as mail_server:
             try:
-                mail_server.login(os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD"))
+                mail_server.login(
+                    os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD")
+                )
                 resp = mail_server.send_message(mail_msg)
 
             except smtplib.SMTPConnectError:
                 raise HTTPException(
-                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail="Could not establish a connection with "\
-                               "mail server")
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Could not establish a connection with "
+                    "mail server",
+                )
 
             except smtplib.SMTPServerDisconnected as err:
                 raise HTTPException(
-                        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail="Disconnected from mail server")
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail="Disconnected from mail server",
+                )
 
             except smtplib.SMTPException as err:
                 raise MAIL_EXCEPTION
 
     except TimeoutError as err:
         raise HTTPException(
-                status_code=status.HTTP_408_REQUEST_TIMEOUT,
-                detail=f"{err}: check internet connection")
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail=f"{err}: check internet connection",
+        )
 
     except Exception as err:
         raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail=err
-            )
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=err
+        )
