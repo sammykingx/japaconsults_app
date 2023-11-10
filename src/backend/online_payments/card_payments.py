@@ -86,6 +86,7 @@ async def card_payments(
         "flw_ref": res["flwRef"],
         "flw_txRef": res["txRef"],
         "inv_id": invoiceId,
+        "title": record.title,
         "amount": float(record.price),
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
@@ -138,11 +139,13 @@ async def verify_card_payments(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
+
     except RaveExceptions.TransactionVerificationError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
+
     # get successfull payment timestamp
     payment_timestamp = datetime.datetime.utcnow()
 
@@ -160,6 +163,7 @@ async def verify_card_payments(
 
     # update invoice
     invoice_record.paid = True
+    invoice_record.flw_txref = payment_record.ref_id
     invoice_record.paid_at = payment_timestamp
 
     db.commit()

@@ -3,6 +3,10 @@ from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, schema
+from rave_python import RaveExceptions
+from online_payments.flutterwave import rave_pay
+from routes_schema import payments_schemas
+from docs.routes import payments_response
 from datetime import date, datetime
 from typing import Annotated
 from pydantic import BaseModel, EmailStr
@@ -13,7 +17,7 @@ router = APIRouter(
     prefix="/payments",
     tags=["Payments"],
     responses={
-        # 200: {"description": "Successful response"},
+        200: {"description": "Successful response"},
         400: {"description": "Missing required data to process request"},
         401: {"description": "Unauthorized access to resource"},
         403: {"description": "Cannot access resource"},
@@ -23,29 +27,13 @@ router = APIRouter(
 )
 
 
-class PendingPayments(BaseModel):
-    ref_id: str
-    rave_txRef: str
-    invoice_id: str
-    paid: bool = False
-    status: str | None
-    payer_email: EmailStr | str
-
-
-class PaymentResponse(PendingPayments, BaseModel):
-    paid_by: str | None
-    amount: float
-    paid_at: datetime | None
-    payment_type: str
-
-
 @router.get(
     "/all",
     summary="returns all payments record",
     description="Returns all payment records on the platform. Can be used by "
     "all users irrespective of their roles, the results is been filtered "
     "internally based on the role type of the active user",
-    response_model=list[PaymentResponse],
+    response_model=list[payments_schemas.PaymentResponse],
 )
 async def app_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -82,7 +70,7 @@ async def app_payments(
     summary="To see all pending payments on the system",
     description="Use this endpoints to see all pending payments on the "
     "system, can be used by all user roles.",
-    response_model=list[PendingPayments],
+    response_model=list[payments_schemas.PendingPayments],
 )
 async def pending_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -108,18 +96,25 @@ async def pending_payments(
     return [payments_serializer(record) for record in records]
 
 
-class TotalRevenueResponse(BaseModel):
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "2023": {
-                    "September": 234.234,
-                    "October": 1234.234,
-                    "November": 22234.234,
-                    "December": 112434.234,
-                },
-            },
-        }
+@router.get(
+    "/verifyPayments",
+    summary="To verify any payments in the event a successfull payment "
+            "is still tagged as 'Pending'",
+    description="The transaction reference 'rave_txref', alongside the "
+    "payment method to verify if the payment is successfull, once it's "
+    "successful, the payment record is updated.",
+)
+async def reVerify_payments(
+    rave_txref: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """re_validates payments"""
+
+    raise HTTPException(
+            status_code=status.HTTP_501_NOT_IMPLEMENTED,
+            detail="Endpoint still in development",
+        )
 
 
 @router.get(
@@ -127,22 +122,7 @@ class TotalRevenueResponse(BaseModel):
     summary="Returns the total revenue on the system",
     description="Returns the total revenue generated based on month"
     "should be used by previledged users",
-    # response_model=TotalRevenueResponse,
-    responses={
-        200: {
-            "content": {
-                "application/json": {
-                    "example": {
-                        "year": {
-                            "janaury": 1345.43,
-                            "febuary": 2098.578,
-                            "march": 308.346,
-                        }
-                    }
-                }
-            },
-        }
-    },
+    responses=payments_response.total_revenue_response,
 )
 async def total_revenue(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -202,18 +182,12 @@ async def total_revenue(
     return data
 
 
-class UserTotalSpend(BaseModel):
-    name: str
-    email: EmailStr
-    total_spend: float
-
-
 @router.get(
     "/totalSpend",
     summary="Returns the total amount spent by a user",
     description="Returns the total amount spent by a user on the platform. "
     "should not be used by previledged users",
-    response_model=UserTotalSpend,
+    response_model=payments_schemas.UserTotalSpend,
 )
 async def user_total_spend(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -257,6 +231,8 @@ def payments_serializer(record):
         "ref_id": record.ref_id,
         "rave_txRef": record.flw_txRef,
         "invoice_id": record.inv_id,
+        "title": record.title,
+        "rave_txref": record.flw_txRef,
         "paid_by": record.paid_by,
         "amount": record.amount,
         "paid": record.paid,

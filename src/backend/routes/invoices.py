@@ -36,6 +36,7 @@ class InvoiceResponse(BaseModel):
     due_date: date
     paid: bool
     paid_at: datetime | None
+    rave_txref: str | None
 
 
 @router.get(
@@ -266,7 +267,13 @@ async def update_invoice(
 
     is_empty(record)
 
-    # updaate db record
+    # update db record
+    if record.paid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Can't Update an already paid invoice",
+            )
+
     record.title = payload.title
     record.desc = payload.desc
     record.price = payload.price
@@ -407,4 +414,5 @@ def invoice_serializer(record: db_models.Invoices):
         "due_date": record.due_date,
         "paid": record.paid,
         "paid_at": record.paid_at,
+        "rave_txref": record.flw_txref,
     }

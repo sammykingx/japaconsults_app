@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, redis_db
 from .flutterwave import rave_pay
-from rave_python import Misc, RaveExceptions
+from rave_python import RaveExceptions
 from typing import Annotated
 import datetime, time
 import json
@@ -66,12 +66,15 @@ async def start_bank_transfer(
             detail=err.err["errMsg"],
         )
 
+    print("1st call =>", res)
+
     ref_id = "REF-" + str(round(time.time()))
     payment_record = {
         "ref_id": ref_id,
         "flw_ref": res["flwRef"],
         "flw_txRef": res["txRef"],
         "inv_id": record.inv_id,
+        "title": record.title,
         "amount": record.price,
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
@@ -115,6 +118,7 @@ async def verify_bank_transfer(
             detail="Invalid reference id to continue verification process",
         )
     data = json.loads(redis.get(refId))
+
     try:
         res = rave_pay.BankTransfer.verify(data["txRef"])
 
@@ -123,6 +127,8 @@ async def verify_bank_transfer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
+
+    print(res)
 
     payment_timestamp = datetime.datetime.utcnow()
     redis.delete(refId)
@@ -143,6 +149,7 @@ async def verify_bank_transfer(
 
     # update invoice record
     invoice_record.paid = True
+    invoice_record.flw_txref = payment_record.ref_id
     invoice_record.paid_at = payment_timestamp
 
     db.commit()

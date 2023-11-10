@@ -183,6 +183,8 @@ class Invoices(Base):
     updated_by = Column(String(50))
     paid = Column(Boolean, default=False)
     paid_at = Column(DateTime)
+    flw_txref = Column(String(20))
+
 
     def __str__(self):
         return (
@@ -214,6 +216,7 @@ class Payments(Base):
         ForeignKey("invoices.inv_id", ondelete="SET DEFAULT"),
         nullable=False,
     )
+    title = Column(String(50))
     amount = Column(Numeric(precision=15, scale=2), nullable=False)
     paid = Column(Boolean, default=False)
     status = Column(String(15))

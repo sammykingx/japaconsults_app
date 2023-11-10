@@ -184,6 +184,7 @@ def serialize_to_db(ref_id, flw_txref, pay_link, record):
         "flw_ref": flw_ref,
         "flw_txRef": flw_txref,
         "inv_id": record.inv_id,
+        "title": record.title,
         "amount": record.price,
         "payer_email": record.to_email,
         "payment_type": "rave modal",
