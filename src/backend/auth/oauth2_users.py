@@ -52,7 +52,9 @@ def email_verification_token(email: EmailStr) -> str:
         "iat": datetime.utcnow(),
         "exp": datetime.utcnow() + timedelta(minutes=30),
     }
-    token = jwt.encode(user_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+    token = jwt.encode(
+        user_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+    )
     return token
 
 
@@ -80,7 +82,9 @@ def create_token(user) -> str:
     exp = datetime.utcnow() + timedelta(minutes=30)
     dup_data.update({"iat": iat, "exp": exp})
 
-    token = jwt.encode(dup_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+    token = jwt.encode(
+        dup_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+    )
     return token
 
 
@@ -94,7 +98,9 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
             detail="Invalid access token",
         )
     try:
-        data = jwt.decode(token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM"))
+        data = jwt.decode(
+            token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
+        )
 
     except jwt.ExpiredSignatureError:
         raise HTTPException(

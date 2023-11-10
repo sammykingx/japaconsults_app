@@ -216,6 +216,7 @@ class Payments(Base):
     )
     amount = Column(Numeric(precision=15, scale=2), nullable=False)
     paid = Column(Boolean, default=False)
+    status = Column(String(15))
     paid_by = Column(String(30))
     payer_email = Column(String(30))
     paid_at = Column(DateTime)

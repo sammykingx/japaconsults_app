@@ -26,8 +26,8 @@ router = APIRouter(
     "/pay",
     summary="Initiates bank transfer payment method",
     description="Use this payment method to start bank transfer payments. "
-                "It returns the transaction ref_id and the temporay bank "
-                "details the user should make payments to.",
+    "It returns the transaction ref_id and the temporay bank "
+    "details the user should make payments to.",
     response_model=schemas.BankTransferResponse,
 )
 async def start_bank_transfer(
@@ -87,8 +87,8 @@ async def start_bank_transfer(
         "message": res["transferNote"],
     }
 
-    #print(temp_bank_acc)
-    #print(type(temp_bank_acc["expires_in"]))
+    # print(temp_bank_acc)
+    # print(type(temp_bank_acc["expires_in"]))
 
     return temp_bank_acc
 

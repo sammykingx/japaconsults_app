@@ -27,15 +27,15 @@ CREDENTIALS_EXCEPTION = HTTPException(
     status_code=status.HTTP_404_NOT_FOUND, detail="Invalid credentials"
 )
 
-GOOGLE_CLIENT_ID = (
-    "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
-)
+GOOGLE_CLIENT_ID = "575832262735-pimi2lkkerr3rt9h10rc2c02o0q6q9sa.apps.googleusercontent.com"
 GOOGLE_CLIENT_SECRET = "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"
 REDIRECT_URL = "http://localhost:5000/Oauth/google/callback"
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 flow = Flow.from_client_secrets_file(
-    client_secrets_file=os.path.join(pathlib.Path(__file__).parent, "ls_OauthID.json"),
+    client_secrets_file=os.path.join(
+        pathlib.Path(__file__).parent, "ls_OauthID.json"
+    ),
     scopes=[
         "openid",
         "https://www.googleapis.com/auth/userinfo.profile",
@@ -57,7 +57,7 @@ def validate_email_token(token: str):
     #        status_code=status.HTTP_403_FORBIDDEN,
     #        detail="Invalid verification token",
     #    )
-    
+
     load_dotenv()
     try:
         encoded_data = jwt.decode(
@@ -78,9 +78,11 @@ def validate_email_token(token: str):
 
     return encoded_data
 
+
 class demo(BaseModel):
     username: str
     paassword: str
+
 
 @router.post(
     "/",
@@ -95,8 +97,8 @@ async def authenticate_user(
     """authenticates a user based on details sent and returns a token"""
 
     user = db_crud.get_specific_record(
-            db, db_models.User, email=form_data.username
-        )
+        db, db_models.User, email=form_data.username
+    )
 
     if not user:
         raise CREDENTIALS_EXCEPTION
@@ -128,7 +130,7 @@ class TokenType(Enum):
     "/generate/emailToken",
     summary="Generates email verification token to verify email",
     description="Use this endpoint to generate tokens for forget "
-                "password as well as email verification",
+    "password as well as email verification",
     response_model=ResponseToken,
     responses=generate_email_token.response_codes,
 )
@@ -140,9 +142,9 @@ async def generate_email_token(
 ):
     """generate email verification token to email address"""
 
-    #try:
+    # try:
     #    user = db.query(db_models.User).filter_by(email=mail).first()
-    #except Exception as err:
+    # except Exception as err:
     #    print(f"error at generate_email => {err}")
     #    raise HTTPException(
     #        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -154,9 +156,9 @@ async def generate_email_token(
     key = mail + ":email_token"
     if redis.exists(key):
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User already has an active validation token",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already has an active validation token",
+        )
 
     user = db_crud.get_specific_record(db, db_models.User, email=mail)
     if not user:
@@ -164,10 +166,10 @@ async def generate_email_token(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No user account found",
         )
-    
+
     email_token = oauth2_users.email_verification_token(mail)
     redis_user_token.add_email_token(key, email_token)
-    
+
     # verv_endpoint = "{}{}{}".format(
     #    req.url_for("verify_user_email"), "?token=", email_token
     # )
@@ -183,7 +185,9 @@ async def generate_email_token(
             },
         ).body.decode()
 
-        email_notification.send_email(message, mail, "Account Verification Required")
+        email_notification.send_email(
+            message, mail, "Account Verification Required"
+        )
     else:
         message = templates.TemplateResponse(
             "changePassword.html",
@@ -209,7 +213,7 @@ class VerifyEmail(BaseModel):
     "/verifyEmail",
     summary="verify user email",
     description="Verify's the user email encoded in token",
-    responses=verify_email.response_codes
+    responses=verify_email.response_codes,
 )
 async def verify_user_email(
     token: str, db: Annotated[Session, Depends(db_engine.get_db)]
@@ -223,22 +227,22 @@ async def verify_user_email(
     redis = redis_db.redis_factory()
     if not redis.exists(key):
         raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="User already Verified",
-            )
-
-    user = db_crud.get_specific_record(
-            db, db_models.User, email=encoded_data["email"]
+            status_code=status.HTTP_409_CONFLICT,
+            detail="User already Verified",
         )
 
-    #if user.is_verified:
+    user = db_crud.get_specific_record(
+        db, db_models.User, email=encoded_data["email"]
+    )
+
+    # if user.is_verified:
     #    raise HTTPException(
     #        status_code=status.HTTP_409_CONFLICT,
     #        detail="User already Verified",
     #    )
 
     user.is_verified = True
-    
+
     try:
         db.commit()
         db.refresh(user)
@@ -268,7 +272,8 @@ class ChangePassword(BaseModel):
 @router.patch(
     "/changePassword",
     summary="Changes the user password",
-    responses=password_change.response_codes)
+    responses=password_change.response_codes,
+)
 async def change_user_password(
     payload: ChangePassword,
     db: Annotated[Session, Depends(db_engine.get_db)],
@@ -276,20 +281,20 @@ async def change_user_password(
     """Updates the user password"""
 
     encoded_data = validate_email_token(payload.token)
-    #INVALID_EMAIL_TOKEN.append(payload.token)
+    # INVALID_EMAIL_TOKEN.append(payload.token)
 
     key = encoded_data["email"] + ":email_token"
     redis = redis_db.redis_factory()
     if not redis.exists(key):
         raise HTTPException(
-                #status_code=status.HTTP_409_CONFLICT,
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Passowrd already changed",
-          )
+            # status_code=status.HTTP_409_CONFLICT,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Passowrd already changed",
+        )
 
     user = db_crud.get_specific_record(
-            db, db_models.User, email=encoded_data["email"]
-        )
+        db, db_models.User, email=encoded_data["email"]
+    )
 
     user.password = password_hash.hash_pwd(payload.new_pwd)
 
@@ -311,7 +316,8 @@ async def change_user_password(
 @router.get(
     "/logout",
     summary="Invalidates the user token",
-    responses=logout.response_codes)
+    responses=logout.response_codes,
+)
 async def logout_user(token: str = Depends(oauth2_users.oauth2_scheme)):
     """revokes the user token"""
 
@@ -339,6 +345,8 @@ async def google_callback(req: Request):
     flow.fetch_token(authorization_response=req.url)
     credentials = flow.credentials
     print(f"credentals {credentials}")
-    user_info = jwt.decode(credentials.id_token, options={"verify_signature": False})
+    user_info = jwt.decode(
+        credentials.id_token, options={"verify_signature": False}
+    )
     print(user_info)
     return {"msg": "not fully implemeted yet"}

@@ -376,9 +376,9 @@ def check_payload(payload: schema.CreateInvoice) -> None:
 
     if payload.due_date < date.today():
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Due date must be greater than current date",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Due date must be greater than current date",
+        )
 
 
 def is_empty(data: db_models.Invoices):

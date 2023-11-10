@@ -135,7 +135,8 @@ async def send_notes(
 
     if not draft:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No notes found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No notes found",
         )
     to_user = db_crud.get_specific_record(
         db, db_models.User, user_id=payload.toId

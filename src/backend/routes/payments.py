@@ -28,6 +28,7 @@ class PendingPayments(BaseModel):
     rave_txRef: str
     invoice_id: str
     paid: bool = False
+    status: str | None
     payer_email: EmailStr | str
 
 
@@ -259,6 +260,7 @@ def payments_serializer(record):
         "paid_by": record.paid_by,
         "amount": record.amount,
         "paid": record.paid,
+        "status": record.status,
         "paid_at": record.paid_at,
         "payer_email": record.payer_email,
         "payment_type": record.payment_type,

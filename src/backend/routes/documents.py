@@ -12,7 +12,8 @@ from models import db_engine, db_models, db_crud
 from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
-#from enum import Enum
+
+# from enum import Enum
 from docs.routes import documents
 import datetime
 
@@ -53,7 +54,7 @@ router = APIRouter(
 )
 
 
-#class Folder(Enum):
+# class Folder(Enum):
 #    academics = "academics"
 #    billing = "billing"
 #    contracts = "contracts"
@@ -108,7 +109,7 @@ def get_user_files(
 
     else:
         records = db_crud.get_by(db, table, owner_id=user)
-    
+
     if not records:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -122,8 +123,8 @@ def get_user_files(
     "/upload",
     summary="Takes a list of files and uploads to google cloud storage",
     description="folder_name should be the name of the folder to upload to "
-                "While the file should contain a list of file object."
-                "Folder name: academics, billing, contract, general, visa",
+    "While the file should contain a list of file object."
+    "Folder name: academics, billing, contract, general, visa",
     response_model=UploadedFileResponse,
     responses=documents.upload_response_codes,
 )
@@ -251,8 +252,8 @@ async def files_for(
     "/recentFiles",
     summary="Gets the recent files uploaded by the aactive user",
     description="This endpoints allows the active user to see all "
-                "his/her recent files uploaded. To see recent files "
-                "based on folder, pass the folder name as query param",
+    "his/her recent files uploaded. To see recent files "
+    "based on folder, pass the folder name as query param",
     response_model=list[MyFiles],
 )
 async def user_recent_files(

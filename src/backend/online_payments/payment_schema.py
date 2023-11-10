@@ -12,10 +12,10 @@ class CardPayments(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "cardno": "234567890987654",
-                "expirymonth": "12",
-                "expiryyear": "34",
-                "cvv": "324",
+                "cardno": "5399838383838381",
+                "expirymonth": "09",
+                "expiryyear": "32",
+                "cvv": "564",
                 "pin": "2345",
             }
         }
@@ -58,3 +58,10 @@ class BankTransferResponse(BaseModel):
 class VerifyBankTransfer(BaseModel):
     msg: str
     transactionComplete: bool
+
+
+class RaveCheckoutResponse(BaseModel):
+    flw_txref: str
+    status: str
+    link: str
+    link_type: str

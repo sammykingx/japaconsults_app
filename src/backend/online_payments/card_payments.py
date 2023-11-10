@@ -18,9 +18,7 @@ router = APIRouter(
     tags=["card Paymemnts"],
     responses={
         200: {"description": "Successfule Request"},
-        400: {
-            "description": "Missing required/Invalid data in request"
-        },
+        400: {"description": "Missing required/Invalid data in request"},
     },
 )
 
@@ -43,7 +41,7 @@ async def card_payments(
 
     # record = db_crud.get_specific_record(
     #    db, db_models.Invoices, inv_id=invoiceId
-    #)
+    # )
 
     # if not record:
     #    raise HTTPException(
@@ -55,10 +53,12 @@ async def card_payments(
     record = payments_utils.get_invoice(db, active_user, invoiceId)
 
     card_details = payload.model_dump().copy()
+    f_name, l_name = active_user["name"].split(" ")
     card_details.update(
         email=active_user["email"],
         amount=float(record.price),
-        firstname=active_user["name"],
+        firstname=f_name,
+        lastname=l_name,
         # suggested_auth="PIN",
     )
 
@@ -70,6 +70,7 @@ async def card_payments(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail=f"{res['suggestedAuth']} authentication not supported",
                 )
+
             card_details.update(suggested_auth="PIN")
             res = rave_pay.Card.charge(card_details)
 

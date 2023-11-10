@@ -232,7 +232,8 @@ async def all_admins(
     records = db_crud.get_by(db, db_models.User, role="admin")
     if not records:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="No admin found"
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No admin found",
         )
     return [serialize_user(record) for record in records]
 
@@ -328,7 +329,7 @@ async def register_user(
             detail="User account exists",
         )
 
-    temp_data = payload.dict().copy()
+    temp_data = payload.model_dump().copy()
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
     temp_data.update(date_joined=datetime.datetime.utcnow())
     db_crud.save(db, db_models.User, temp_data)
@@ -439,7 +440,9 @@ async def user_profile_pic(
     record = db_crud.get_specific_record(
         db, db_models.User, user_id=user["sub"]
     )
-    record.profile_pic = resp["webViewLink"].removesuffix("?usp=drivesdk")
+    record.profile_pic = resp["webViewLink"].removesuffix(
+        "?usp=drivesdk"
+    )
     try:
         db.commit()
         db.refresh(record)
