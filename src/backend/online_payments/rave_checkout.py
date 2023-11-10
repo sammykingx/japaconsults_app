@@ -157,7 +157,7 @@ def build_payment_payload(
         "amount": price,
         "customer": customer,
         #"redirect_url": "http://localhost:5000/raveCheckout/verifyPayments",
-        "redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/verifyPayments"
+        "redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/verifyPayments",
         "customizations": {
             "title": "sammykingx-japaconsults",
             "logo": "https://japaconsults.com/wp-content/"
@@ -187,4 +187,5 @@ def serialize_to_db(ref_id, flw_txref, pay_link, record):
         "amount": record.price,
         "payer_email": record.to_email,
         "payment_type": "rave modal",
+        "status": "Pending",
     }

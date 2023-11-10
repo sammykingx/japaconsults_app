@@ -76,6 +76,7 @@ async def start_bank_transfer(
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
         "payment_type": "Bank Transfer",
+        "status": "Pending",
     }
     db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(res))
@@ -138,6 +139,7 @@ async def verify_bank_transfer(
     # update payment record
     payment_record.paid = True
     payment_record.paid_at = payment_timestamp
+    payment_record.status = "Paid"
 
     # update invoice record
     invoice_record.paid = True

@@ -90,6 +90,7 @@ async def card_payments(
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
         "payment_type": "card",
+        "status": "Pending",
     }
     db_crud.save(db, db_models.Payments, new_record)
     redis.set(ref_id, json.dumps(res))
@@ -155,6 +156,7 @@ async def verify_card_payments(
     # update payments
     payment_record.paid = True
     payment_record.paid_at = payment_timestamp
+    payment_record.status = "Paid"
 
     # update invoice
     invoice_record.paid = True
