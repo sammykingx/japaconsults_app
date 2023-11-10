@@ -117,6 +117,7 @@ async def verify_bank_transfer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid reference id to continue verification process",
         )
+
     data = json.loads(redis.get(refId))
 
     try:
@@ -127,8 +128,6 @@ async def verify_bank_transfer(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
-
-    print(res)
 
     payment_timestamp = datetime.datetime.utcnow()
     redis.delete(refId)
@@ -149,7 +148,8 @@ async def verify_bank_transfer(
 
     # update invoice record
     invoice_record.paid = True
-    invoice_record.flw_txref = payment_record.ref_id
+    invoice_record.ref_id = payment_record.ref_id
+    invoice_record.flw_txref = payment_record.flw_txRef
     invoice_record.paid_at = payment_timestamp
 
     db.commit()

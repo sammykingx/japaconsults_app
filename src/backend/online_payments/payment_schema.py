@@ -47,6 +47,15 @@ class VerifyCardPayments(BaseModel):
         }
 
 
+class SuccessfullCardPayments(BaseModel):
+    transactionComplete: bool
+    ref_id: str
+    inv_id: str
+    amount: float
+    chargedamount: float
+    currency: str
+
+
 class BankTransferResponse(BaseModel):
     ref_id: str
     bank_name: str

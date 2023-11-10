@@ -184,6 +184,7 @@ class Invoices(Base):
     paid = Column(Boolean, default=False)
     paid_at = Column(DateTime)
     flw_txref = Column(String(20))
+    ref_id = Column(String(15))
 
 
     def __str__(self):

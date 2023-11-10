@@ -9,6 +9,7 @@ import datetime, time
 import json
 from online_payments import payments_utils
 import online_payments.payment_schema as schemas
+from docs.online_payment_responses import card_response
 
 
 redis = redis_db.redis_factory()
@@ -17,7 +18,7 @@ router = APIRouter(
     prefix="/card",
     tags=["card Paymemnts"],
     responses={
-        200: {"description": "Successfule Request"},
+    #    200: {"description": "Successfule Request"},
         400: {"description": "Missing required/Invalid data in request"},
     },
 )
@@ -107,6 +108,8 @@ async def card_payments(
     description="This method is called to verify the users payments. The otp "
     "sent by the user's bank should be sent alongside the payment ref_id "
     "gotten from pay endpoint.",
+    response_model=schemas.SuccessfullCardPayments,
+    responses=card_response.verify_card_charge,
 )
 async def verify_card_payments(
     payload: schemas.VerifyCardPayments,
@@ -163,7 +166,8 @@ async def verify_card_payments(
 
     # update invoice
     invoice_record.paid = True
-    invoice_record.flw_txref = payment_record.ref_id
+    invoice_record.ref_id = payment_record.ref_id
+    invoice_record.flw_txref = payment_record.flw_txRef
     invoice_record.paid_at = payment_timestamp
 
     db.commit()

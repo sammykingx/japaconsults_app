@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, schema
+from routes_schema import invoice_schema
 from datetime import date, datetime
 from typing import Annotated
 from pydantic import BaseModel, EmailStr
@@ -21,29 +22,11 @@ router = APIRouter(
     },
 )
 
-
-# temp
-class InvoiceResponse(BaseModel):
-    inv_id: str
-    title: str
-    desc: str
-    price: float
-    to_email: EmailStr
-    created_at: datetime
-    created_by: str
-    updated_at: datetime | None
-    updated_by: str | None
-    due_date: date
-    paid: bool
-    paid_at: datetime | None
-    rave_txref: str | None
-
-
 @router.get(
     "/all",
     summary="Returns all created invoices",
     description="This endpoints can be used by previledged and normal users",
-    response_model=list[InvoiceResponse],
+    response_model=list[invoice_schema.InvoiceResponse],
 )
 async def get_all_invoice(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -97,7 +80,7 @@ async def get_all_invoice(
     "/pending",
     summary="Returns all unpaid invoices",
     description="This endpoint can be used by all users, no restrictions",
-    response_model=list[InvoiceResponse],
+    response_model=list[invoice_schema.InvoiceResponse],
 )
 async def get_pending_invoices(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -142,7 +125,7 @@ async def get_pending_invoices(
     description="Use this endpoint to get all paid invoices both for users "
     "and previledged users. To get all paid invoices by the "
     "active user, pass the email of user as query parameter.",
-    response_model=list[InvoiceResponse],
+    response_model=list[invoice_schema.InvoiceResponse],
 )
 async def get_paid_invoice(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
@@ -223,32 +206,13 @@ async def create_invoice(
     return {"msg": "Invoice created", "invoiceId": data["inv_id"]}
 
 
-class UpdateInvoice(BaseModel):
-    inv_id: str
-    title: str
-    desc: str
-    price: float
-    due_date: date
-
-    class Config:
-        json_schema_extra = {
-            "example": {
-                "inv_id": "JPC-1243567809",
-                "title": "title of the invoice",
-                "desc": "a short description of the invoice generated",
-                "price": 2500.00,
-                "due_date": "2024-12-30",
-            }
-        }
-
-
 @router.put(
     "/update",
     summary="updates the fields of an invoice",
     description="This endpoint should not be used by users with role type 'user'.",
 )
 async def update_invoice(
-    payload: UpdateInvoice,
+    payload: invoice_schema.UpdateInvoice,
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
@@ -415,4 +379,5 @@ def invoice_serializer(record: db_models.Invoices):
         "paid": record.paid,
         "paid_at": record.paid_at,
         "rave_txref": record.flw_txref,
+        "ref_id": record.ref_id,
     }
