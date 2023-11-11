@@ -20,7 +20,6 @@ router = APIRouter(
         200: {"description": "Successful response"},
         400: {"description": "Missing required data to process request"},
         401: {"description": "Unauthorized access to resource"},
-        403: {"description": "Cannot access resource"},
         404: {"description": "Resource Not Found"},
         500: {"description": "Internal server error"},
     },
@@ -54,12 +53,6 @@ async def app_payments(
             db, db_models.Payments, db_models.Payments.paid_at
         )
 
-    # if not records:
-    #    raise HTTPException(
-    #        status_code=status.HTTP_404_NOT_FOUND,
-    #        detail="No payment record found",
-    #    )
-
     check_record(records)
 
     return [payments_serializer(record) for record in records]
@@ -83,7 +76,8 @@ async def pending_payments(
             db,
             db_models.Payments,
             db_models.Payments.ref_id,
-            paid=False,
+            #paid=False,
+            status="pending",
             payer_email=active_user["email"],
         )
 
@@ -97,19 +91,91 @@ async def pending_payments(
 
 
 @router.get(
+    "/paid",
+    summary="To see all succesful payments on the system",
+    description="Use this endpoints to see all paid payments on the "
+    "system, can be used by all user roles.",
+    response_model=list[payments_schemas.PendingPayments],
+)
+async def all_paid_payments(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """return all paid payments"""
+
+    if active_user["role"] == "user":
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.paid_at,
+            paid=True,
+            payer_email=active_user["email"],
+        )
+
+    else:
+        records = db_crud.filter_record_in_lifo(
+            db, db_models.Payments, db_models.Payments.paid_at, paid=True
+        )
+
+    check_record(records)
+    return [payments_serializer(record) for record in records]
+
+
+@router.get(
+    "/cancelledPayments",
+    summary="To see all cancelled payments on the system",
+    description="Use this endpoints to see all cancelled payments on the "
+    "system, can be used by all user roles.",
+    response_model=list[payments_schemas.PendingPayments],
+)
+async def all_cancelled_payments(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """return all paid payments"""
+
+    if active_user["role"] == "user":
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="cancelled",
+            payer_email=active_user["email"],
+        )
+
+    else:
+        records = db_crud.filter_record_in_lifo(
+                db,
+                db_models.Payments,
+                db_models.Payments.ref_id,
+                status="cancelled",
+            )
+
+    check_record(records)
+    return [payments_serializer(record) for record in records]
+
+
+@router.get(
     "/verifyPayments",
-    summary="To verify any payments in the event a successfull payment "
-            "is still tagged as 'Pending'",
-    description="The transaction reference 'rave_txref', alongside the "
-    "payment method to verify if the payment is successfull, once it's "
-    "successful, the payment record is updated.",
+    summary="Verify's any pending payments",
+    description="The transaction reference 'refId' is passed as "
+    "query parameter in verifying if a payment was successfull.Once "
+    "it's successful, the payment record is updated.",
+    include_in_schema=False,
 )
 async def reVerify_payments(
-    rave_txref: str,
+    refId: str,
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """re_validates payments"""
+
+    record = db_crud.get_specific_record(
+                    db, db_models.Payments, ref_id=refId
+                )
+
+    check_record(record)
+    # make a network call to verify payment
 
     raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,

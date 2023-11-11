@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, schema
 from routes_schema import invoice_schema
+from online_payments import payments_utils
 from datetime import date, datetime
 from typing import Annotated
 from pydantic import BaseModel, EmailStr
@@ -89,13 +90,6 @@ async def get_pending_invoices(
     """returns all unpaid invoices"""
 
     if active_user["role"] == "user":
-        # records = db_crud.get_by(
-        #    db,
-        #    db_models.Invoices,
-        #    to_email=active_user["email"],
-        #    paid=False,
-        # )
-
         records = db_crud.filter_record_in_lifo(
             db,
             db_models.Invoices,
@@ -111,7 +105,6 @@ async def get_pending_invoices(
             db_models.Invoices.created_at,
             paid=False,
         )
-        # records = db_crud.get_by(db, db_models.Invoices, paid=False)
 
     is_empty(records)
 
@@ -137,7 +130,7 @@ async def get_paid_invoice(
         records = db_crud.filter_record_in_lifo(
             db,
             db_models.Invoices,
-            db_models.Invoices.created_at,
+            db_models.Invoices.paid_at,
             to_email=active_user["email"],
             paid=True,
         )
@@ -146,7 +139,7 @@ async def get_paid_invoice(
         records = db_crud.filter_record_in_lifo(
             db,
             db_models.Invoices,
-            db_models.Invoices.created_at,
+            db_models.Invoices.paid_at,
             paid=True,
         )
 
@@ -288,13 +281,13 @@ async def manual_invoice_status_update(
 
     payment_timestamp = datetime.utcnow()
 
-    # update invoice record
-    invoice_record.paid = True
-    invoice_record.paid_at = payment_timestamp
+    payments_utils.update_payments_to_paid(
+            payment_record, payment_timestamp
+        )
 
-    # update payment record
-    payment_record.paid = True
-    payment_record.paid_at = payment_timestamp
+    payments_utils.update_invoice_to_paid(
+            invoice_record, payment_record, payment_timestamp,
+        )
 
     db.commit()
 

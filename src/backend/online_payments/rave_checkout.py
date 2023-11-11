@@ -48,7 +48,10 @@ async def rave_checkout(
 ):
     """exchange invoice ID for payment url"""
 
-    record = payments_utils.get_invoice(db, active_user, invoiceId)
+    record = payments_utils.validate_invoice(
+                    db, active_user["email"], invoiceId
+                )
+
     customer = {
         "name": active_user["name"],
         "email": active_user["email"],
@@ -61,9 +64,9 @@ async def rave_checkout(
 
     response = get_rave_link(user_payload)
     pay_link = response["data"]["link"]
-    our_ref_id = "REF-" + str(round(time.time()))
+    our_ref_id = "REF-" + str(round(time.time()) * 2)
     serialized_data = serialize_to_db(
-        our_ref_id, flw_txref, pay_link, record
+        active_user, our_ref_id, flw_txref, pay_link, record
     )
 
     db_crud.save(db, db_models.Payments, serialized_data)
@@ -168,7 +171,7 @@ def build_payment_payload(
     return payload
 
 
-def serialize_to_db(ref_id, flw_txref, pay_link, record):
+def serialize_to_db(active_user, ref_id, flw_txref, pay_link, record):
     """serialize the user data to db format"""
 
     # live mode
@@ -179,14 +182,24 @@ def serialize_to_db(ref_id, flw_txref, pay_link, record):
     # test mode
     # flw_ref = pay_link.split("/hosted/pay/")[-1]
 
-    return {
-        "ref_id": ref_id,
-        "flw_ref": flw_ref,
-        "flw_txRef": flw_txref,
-        "inv_id": record.inv_id,
-        "title": record.title,
-        "amount": record.price,
-        "payer_email": record.to_email,
-        "payment_type": "rave modal",
-        "status": "Pending",
-    }
+    all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
+    serialized_data = payments_utils.payment_serializer(
+                            ref_id,
+                            all_ref,
+                            record,
+                            active_user,
+                            "rave modal"
+                    )
+
+    return serialized_data
+   # return {
+   #     "ref_id": ref_id,
+   #     "flw_ref": flw_ref,
+   #     "flw_txRef": flw_txref,
+   #     "inv_id": record.inv_id,
+   #     "title": record.title,
+   #     "amount": record.price,
+   #     "payer_email": record.to_email,
+   #     "payment_type": "rave modal",
+   #     "status": "pending",
+   # }

@@ -38,20 +38,10 @@ async def card_payments(
 ):
     """collect card payments"""
 
-    # check payload
-
-    # record = db_crud.get_specific_record(
-    #    db, db_models.Invoices, inv_id=invoiceId
-    # )
-
-    # if not record:
-    #    raise HTTPException(
-    #        status_code=status.HTTP_404_NOT_FOUND,
-    #        detail="No matching invoice found, check invoice id",
-    #    )
-
     # gets and perform checks on the invoice ID
-    record = payments_utils.get_invoice(db, active_user, invoiceId)
+    record = payments_utils.validate_invoice(
+                    db, active_user["email"], invoiceId
+            )
 
     card_details = payload.model_dump().copy()
     f_name, l_name = active_user["name"].split(" ")
@@ -81,20 +71,16 @@ async def card_payments(
             detail=err.err["errMsg"],
         )
 
-    ref_id = "REF-" + str(round(time.time()))
-    new_record = {
-        "ref_id": ref_id,
-        "flw_ref": res["flwRef"],
-        "flw_txRef": res["txRef"],
-        "inv_id": invoiceId,
-        "title": record.title,
-        "amount": float(record.price),
-        "payer_email": active_user["email"],
-        "paid_by": active_user["name"],
-        "payment_type": "card",
-        "status": "Pending",
-    }
-    db_crud.save(db, db_models.Payments, new_record)
+    ref_id = "REF-" + str(round(time.time()) * 2)
+    payment_record = payments_utils.payment_serializer(
+                            ref_id,
+                            res,
+                            record,
+                            active_user,
+                            "card"
+                    )
+
+    db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(res))
     return {
         "ref_id": ref_id,
@@ -129,51 +115,33 @@ async def verify_card_payments(
     rave_flwRef = data["flwRef"]
     rave_txRef = data["txRef"]
 
-    payment_record = db_crud.get_specific_record(
-        db, db_models.Payments, ref_id=payload.ref_id
-    )
-
     try:
         res = rave_pay.Card.validate(rave_flwRef, payload.otp)
         res = rave_pay.Card.verify(rave_txRef)
 
     except RaveExceptions.TransactionValidationError as err:
+        payments_utils.cancell_transaction(db, payload.ref_id)
+        redis.delete(payload.ref_id)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
 
     except RaveExceptions.TransactionVerificationError as err:
+        payments_utils.cancell_transaction(db, payload.ref_id)
+        redis.delete(payload.ref_id)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
 
     # get successfull payment timestamp
-    payment_timestamp = datetime.datetime.utcnow()
+    #payment_timestamp = datetime.datetime.utcnow()
+
+    invoice_record = payments_utils.successfull_transaction(db, payload.ref_id)
 
     # delete key from redis
     redis.delete(payload.ref_id)
-
-    invoice_record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=payment_record.inv_id
-    )
-
-    # update payments
-    payment_record.paid = True
-    payment_record.paid_at = payment_timestamp
-    payment_record.status = "Paid"
-
-    # update invoice
-    invoice_record.paid = True
-    invoice_record.ref_id = payment_record.ref_id
-    invoice_record.flw_txref = payment_record.flw_txRef
-    invoice_record.paid_at = payment_timestamp
-
-    db.commit()
-
-    db.refresh(payment_record)
-    db.refresh(invoice_record)
 
     return {
         "transactionComplete": True,
@@ -183,6 +151,3 @@ async def verify_card_payments(
         "chargedamount": res["chargedamount"],
         "currency": res["currency"],
     }
-
-
-# async def get_record(db,)

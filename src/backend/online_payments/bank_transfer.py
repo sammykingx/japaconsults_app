@@ -37,18 +37,9 @@ async def start_bank_transfer(
 ):
     """initiate bank transfer"""
 
-    # record = check_invoice(db, invoiceId)
-    # if record.to_email != active_user["email"]:
-    #    raise HTTPException(
-    #        status_code=status.HTTP_400_BAD_REQUEST,
-    #        detail="Invoice not assinged to active user",
-    #    )
-
-    # record = db_crud.get_specific_record(
-    #        db, db_models.Invoices, inv_id=invoiceId
-    #    )
-
-    record = payments_utils.get_invoice(db, active_user, invoiceId)
+    record = payments_utils.validate_invoice(
+                    db, active_user["email"], invoiceId
+                )
     first_name, last_name = active_user["name"].split(" ")
     data = {
         "firstname": first_name,
@@ -66,21 +57,15 @@ async def start_bank_transfer(
             detail=err.err["errMsg"],
         )
 
-    print("1st call =>", res)
+    ref_id = "REF-" + str(round(time.time()) * 2)
+    payment_record = payments_utils.payment_serializer(
+                            ref_id,
+                            res,
+                            record,
+                            active_user,
+                            "bank transfer"
+                    )
 
-    ref_id = "REF-" + str(round(time.time()))
-    payment_record = {
-        "ref_id": ref_id,
-        "flw_ref": res["flwRef"],
-        "flw_txRef": res["txRef"],
-        "inv_id": record.inv_id,
-        "title": record.title,
-        "amount": record.price,
-        "payer_email": active_user["email"],
-        "paid_by": active_user["name"],
-        "payment_type": "Bank Transfer",
-        "status": "Pending",
-    }
     db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(res))
     temp_bank_acc = {
@@ -90,9 +75,6 @@ async def start_bank_transfer(
         "expires_in": res["expiresIn"],
         "message": res["transferNote"],
     }
-
-    # print(temp_bank_acc)
-    # print(type(temp_bank_acc["expires_in"]))
 
     return temp_bank_acc
 
@@ -124,55 +106,17 @@ async def verify_bank_transfer(
         res = rave_pay.BankTransfer.verify(data["txRef"])
 
     except RaveExceptions.TransactionVerificationError as err:
+        payments_utils.cancell_transaction(db, refId)
+        redis.delete(refId)
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
         )
 
-    payment_timestamp = datetime.datetime.utcnow()
     redis.delete(refId)
-
-    # get db records
-    payment_record = db_crud.get_specific_record(
-        db, db_models.Payments, ref_id=refId
-    )
-
-    invoice_record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=payment_record.inv_id
-    )
-
-    # update payment record
-    payment_record.paid = True
-    payment_record.paid_at = payment_timestamp
-    payment_record.status = "Paid"
-
-    # update invoice record
-    invoice_record.paid = True
-    invoice_record.ref_id = payment_record.ref_id
-    invoice_record.flw_txref = payment_record.flw_txRef
-    invoice_record.paid_at = payment_timestamp
-
-    db.commit()
-
-    db.refresh(payment_record)
-    db.refresh(invoice_record)
+    payments_utils.successfull_transaction(db, refId)
 
     return {
         "msg": "Transfer successfull",
         "transactionComplete": res["transactionComplete"],
     }
-
-
-def check_invoice(db: Session, invoiceId: str) -> db_models.Invoices:
-    """check if the invoice is existing in the db"""
-
-    record = db_crud.get_specific_record(
-        db, db_models.Invoices, inv_id=invoiceId
-    )
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No matching invoice found",
-        )
-
-    return record
