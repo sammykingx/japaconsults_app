@@ -10,15 +10,16 @@ class PendingPayments(BaseModel):
     amount: float
     paid: bool = False
     status: str | None
+    paid_by: str | None
     payer_email: EmailStr | str
     payment_type: str
 
 
 class PaymentResponse(PendingPayments, BaseModel):
-    paid_by: str | None
+    #paid_by: str | None
     #amount: float
     paid_at: datetime | None
-    payment_type: str
+    #payment_type: str
 
 
 class UserTotalSpend(BaseModel):
