@@ -20,17 +20,19 @@ def validate_invoice(db, email, invoiceId):
 def has_active_payment(db, invoiceId):
     """checks if the user has an active payment process"""
 
-    payment_record = db_crud.get_specific_record(
+    payment_records = db_crud.get_by(
         db, db_models.Payments, inv_id=invoiceId
     )
 
-    if not payment_record:
+    if not payment_records:
         return False
 
-    if payment_record.status == "pending":
-        raise HTTPException(
+    for record in payment_records:
+        if record.status == "pending":
+            raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="You still have an active payment process.",
+                detail=f"{record.ref_id} still active, kindly complete "
+                       "transaction",
             )
 
 
