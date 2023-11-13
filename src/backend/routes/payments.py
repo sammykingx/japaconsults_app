@@ -2,9 +2,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import extract, func
 from sqlalchemy.orm import Session
 from auth import oauth2_users
-from models import db_engine, db_crud, db_models, schema
+from models import db_engine, db_crud, db_models, redis_db, schema
 from rave_python import RaveExceptions
 from online_payments.flutterwave import rave_pay
+from online_payments import payments_utils
 from routes_schema import payments_schemas
 from docs.routes import payments_response
 from datetime import date, datetime
@@ -24,6 +25,8 @@ router = APIRouter(
         500: {"description": "Internal server error"},
     },
 )
+
+redis = redis_db.redis_factory()
 
 
 @router.get(
@@ -153,6 +156,31 @@ async def all_cancelled_payments(
 
     check_record(records)
     return [payments_serializer(record) for record in records]
+
+
+@router.get(
+    "/cancellTransaction",
+    summary="Cancells a transaction",
+    description="Changes the transaction status to cancelled",
+    response_model=payments_schemas.CancellTransactionResponse,
+)
+async def cancell_transaction(
+    refId: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """cancels a transaction"""
+
+    if not redis.exists(refId):
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid reference id",
+            )
+
+    cancelled_payment = payments_utils.cancell_transaction(db, refId)
+    redis.delete(refId)
+    print(cancelled_payment)
+    return cancelled_payment
 
 
 @router.get(

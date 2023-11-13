@@ -101,6 +101,7 @@ def cancell_transaction(db, refId):
     payment_record.status = "cancelled"
     db.commit()
     db.refresh(payment_record)
+    return payment_record
 
 
 def update_invoice_to_paid(

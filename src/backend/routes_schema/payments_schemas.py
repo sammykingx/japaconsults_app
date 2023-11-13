@@ -26,3 +26,12 @@ class UserTotalSpend(BaseModel):
     name: str
     email: EmailStr
     total_spend: float
+
+
+class CancellTransactionResponse(BaseModel):
+    ref_id: str
+    inv_id: str
+    status: str
+    amount: float
+    paid: bool
+    payment_type: str

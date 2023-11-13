@@ -42,16 +42,24 @@ async def start_bank_transfer(
                 )
     first_name, last_name = active_user["name"].split(" ")
     data = {
-        "firstname": first_name,
-        "lastname": last_name,
+       # "firstname": first_name,
+       # "lastname": last_name,
         "email": active_user["email"],
         "amount": float(record.price),
+        "currency": "NGN",
+        "tx_ref": "MC-1585230950508",
     }
 
     try:
         res = rave_pay.BankTransfer.charge(data)
 
     except RaveExceptions.TransactionChargeError as err:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=err.err["errMsg"],
+        )
+
+    except RaveExceptions.AccountChargeError as err:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=err.err["errMsg"],
