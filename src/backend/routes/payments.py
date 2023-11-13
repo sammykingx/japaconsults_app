@@ -95,7 +95,7 @@ async def pending_payments(
     summary="To see all succesful payments on the system",
     description="Use this endpoints to see all paid payments on the "
     "system, can be used by all user roles.",
-    response_model=list[payments_schemas.PendingPayments],
+    response_model=list[payments_schemas.PaymentResponse],
 )
 async def all_paid_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
