@@ -70,7 +70,7 @@ class VerifyBankTransfer(BaseModel):
 
 
 class RaveCheckoutResponse(BaseModel):
-    flw_txref: str
+    ref_id: str
     status: str
     link: str
     link_type: str

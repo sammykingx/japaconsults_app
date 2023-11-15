@@ -90,15 +90,29 @@ def get_payments_record(db, refId):
     return record
 
 
-def cancell_transaction(db, refId):
+def cancell_transaction(db, ref):
     """ changes the payments status to cancelled
 
         db: the request db session
-        refId: the payment reference id
+        ref: the payment reference either reference id
     """
 
-    payment_record = get_payments_record(db, refId)
+    payment_record = get_payments_record(db, ref)
     payment_record.status = "cancelled"
+    db.commit()
+    db.refresh(payment_record)
+    return payment_record
+
+
+def failed_transaction(db, ref):
+    """ changes the payments status to failed
+
+        db: the request db session
+        ref: the payment reference either reference id
+    """
+
+    payment_record = get_payments_record(db, ref)
+    payment_record.status = "failed"
     db.commit()
     db.refresh(payment_record)
     return payment_record
@@ -148,16 +162,29 @@ def successfull_transaction(db, refId):
     return invoice_record
 
 
-def payment_serializer(ref_id, resp, record, active_user, payment_type):
+def change_to_checking(db, refId, transaction_id):
+    """changes the payment transaction status to checking"""
+
+    payment_record = get_payments_record(db, refId)
+    payment_record.flw_txRef = transaction_id
+    payment_record.status = "checking"
+
+    db.commit()
+    db.refresh(payment_record)
+
+    return payment_record
+
+
+def payment_serializer(ref_id, flw_ref, record, active_user, payment_type):
     """serializes the payment record"""
 
     return {
         "ref_id": ref_id,
-        "flw_ref": resp["flwRef"],
-        "flw_txRef": resp["txRef"],
+        "flw_ref": flw_ref,
+        #"flw_txRef": resp["txRef"],
         "inv_id": record.inv_id,
         "title": record.title,
-        "amount": record.price,
+        "amount": float(record.price),
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
         "payment_type": payment_type,

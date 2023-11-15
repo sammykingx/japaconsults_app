@@ -179,7 +179,6 @@ async def cancell_transaction(
 
     cancelled_payment = payments_utils.cancell_transaction(db, refId)
     redis.delete(refId)
-    print(cancelled_payment)
     return cancelled_payment
 
 

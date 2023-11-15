@@ -4,7 +4,7 @@ from datetime import date, datetime
 
 class PendingPayments(BaseModel):
     ref_id: str
-    rave_txRef: str
+    rave_txRef: str | None
     invoice_id: str
     title:  str | None
     amount: float

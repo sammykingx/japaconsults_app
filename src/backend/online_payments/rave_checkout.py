@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Request,
+    status,
+)
 from sqlalchemy.orm import Session
 from auth import oauth2_users
-from models import db_engine, db_crud, db_models
+from models import db_engine, db_crud, db_models, redis_db
 from online_payments import payments_utils, payment_schema
 from dotenv import load_dotenv
 from typing import Annotated
 import requests as req
-import os, time
+import json, os, time
 
 
 router = APIRouter(
@@ -18,6 +25,8 @@ router = APIRouter(
         }
     },
 )
+
+redis = redis_db.redis_factory()
 
 CHECKOUT_ENDPOINT = "https://api.flutterwave.com/v3/payments"
 
@@ -57,21 +66,23 @@ async def rave_checkout(
         "email": active_user["email"],
     }
 
-    flw_txref = "MC-" + str(round(time.time()) * 1000)
+    ref_id = "REF-" + str(round(time.time()) * 2)
     user_payload = build_payment_payload(
-        flw_txref, float(record.price), customer
+        ref_id, float(record.price), customer
     )
 
     response = get_rave_link(user_payload)
     pay_link = response["data"]["link"]
-    our_ref_id = "REF-" + str(round(time.time()) * 2)
+    #our_ref_id = "REF-" + str(round(time.time()) * 2)
     serialized_data = serialize_to_db(
-        active_user, our_ref_id, flw_txref, pay_link, record
+        active_user, ref_id, pay_link, record
     )
 
+    redis.set(ref_id, json.dumps(serialized_data))
     db_crud.save(db, db_models.Payments, serialized_data)
+
     return {
-        "flw_txref": flw_txref,
+        "ref_id": ref_id,
         "status": response["status"],
         "link": response["data"]["link"],
         "link_type": response["message"],
@@ -79,23 +90,24 @@ async def rave_checkout(
 
 
 @router.get(
-    "/verifyPayments",
+    "/callback",
     summary="Verify's if the users payment was successful",
     description="This endpoint is automatically called by payment processor"
     " after user completes payment process. We then verify the"
     " the users payments if it was successful or cancelled",
 )
-async def callback(
+async def rave_checkout_callback(
     req_url: Request,
-    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    bg_task: BackgroundTasks,
+    #active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """Verify's user payments"""
 
-    raise HTTPException(
-        status_code=status.HTTP_501_NOT_IMPLEMENTED,
-        detail="Endpoint still in development",
-    )
+   # raise HTTPException(
+   #     status_code=status.HTTP_501_NOT_IMPLEMENTED,
+   #     detail="Endpoint still in development",
+   # )
 
     query_params = str(req_url.query_params)
     params = dict(item.split("=") for item in query_params.split("&"))
@@ -105,23 +117,40 @@ async def callback(
     # status can be cancelled, failed,
     if params.get("status") == "cancelled":
         # update record with txref to cancelled
-        print("cancelled")
+        payment_record = payments_utils.cancell_transaction(
+                                db, params.get("tx_ref"))
 
-    url = r.url
+        redis.delete(params.get("tx_ref"))
+        return {
+                "status": params.get("status"),
+                "ref_id": params.get("tx_ref"),
+            }
 
-    # return params
+    elif params.get("status") == "failed":
+        payment_record = payments_utils.failed_transaction(
+                                db, params.get("tx_ref"))
 
+        redis.delete(params.get("tx_ref"))
+        return {
+                "status": params.get("status"),
+                "ref_id": params.get("tx_ref"),
+            }
 
-# failed response
-failed_rsp = {
-    "params": {
-        "status": "cancelled",
-        "tx_ref": "REF-1697999408.2708738",
-    },
-    "url": {
-        "_url": "http://localhost:5000/callback?status=cancelled&tx_ref=REF-1697999408.2708738",
-    },
-}
+    # change transaction to checking awaiting call to verification endpoint
+    payment_record = payments_utils.change_to_checking(
+                            db,
+                            params.get("tx_ref"),
+                            params.get("transaction_id"),
+                        )
+    # update redis key to add transaction_id
+    # add background job to verify transaction
+
+    return {
+            "status": payment_record.status,
+            "ref_id": params.get("tx_ref"),
+        }
+
+    return query_params
 
 
 def get_rave_link(user_payload):
@@ -159,8 +188,8 @@ def build_payment_payload(
         "tx_ref": flw_txref,
         "amount": price,
         "customer": customer,
-        #"redirect_url": "http://localhost:5000/raveCheckout/verifyPayments",
-        "redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/verifyPayments",
+        "redirect_url": "http://localhost:5000/raveCheckout/callback",
+        #"redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/callback",
         "customizations": {
             "title": "sammykingx-japaconsults",
             "logo": "https://japaconsults.com/wp-content/"
@@ -171,7 +200,7 @@ def build_payment_payload(
     return payload
 
 
-def serialize_to_db(active_user, ref_id, flw_txref, pay_link, record):
+def serialize_to_db(active_user, ref_id, pay_link, record):
     """serialize the user data to db format"""
 
     # live mode
@@ -180,26 +209,16 @@ def serialize_to_db(active_user, ref_id, flw_txref, pay_link, record):
     )
 
     # test mode
-    # flw_ref = pay_link.split("/hosted/pay/")[-1]
+    #flw_ref = pay_link.split("/hosted/pay/")[-1]
 
-    all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
+    #all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
+
     serialized_data = payments_utils.payment_serializer(
                             ref_id,
-                            all_ref,
+                            flw_ref,
                             record,
                             active_user,
                             "rave modal"
                     )
 
     return serialized_data
-   # return {
-   #     "ref_id": ref_id,
-   #     "flw_ref": flw_ref,
-   #     "flw_txRef": flw_txref,
-   #     "inv_id": record.inv_id,
-   #     "title": record.title,
-   #     "amount": record.price,
-   #     "payer_email": record.to_email,
-   #     "payment_type": "rave modal",
-   #     "status": "pending",
-   # }

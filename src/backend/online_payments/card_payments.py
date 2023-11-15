@@ -29,6 +29,7 @@ router = APIRouter(
     summary="Initiates card payment process for the active user.",
     description="Should be used for processing card payments",
     response_model=schemas.CardResponse,
+    include_in_schema=False,
 )
 async def card_payments(
     invoiceId: str,
@@ -96,6 +97,7 @@ async def card_payments(
     "gotten from pay endpoint.",
     response_model=schemas.SuccessfullCardPayments,
     responses=card_response.verify_card_charge,
+    include_in_schema=False,
 )
 async def verify_card_payments(
     payload: schemas.VerifyCardPayments,

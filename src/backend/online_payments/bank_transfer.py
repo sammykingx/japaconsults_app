@@ -29,6 +29,7 @@ router = APIRouter(
     "It returns the transaction ref_id and the temporay bank "
     "details the user should make payments to.",
     response_model=schemas.BankTransferResponse,
+    include_in_schema=False,
 )
 async def start_bank_transfer(
     invoiceId: str,
@@ -42,12 +43,12 @@ async def start_bank_transfer(
                 )
     first_name, last_name = active_user["name"].split(" ")
     data = {
-       # "firstname": first_name,
-       # "lastname": last_name,
+        "firstname": first_name,
+        "lastname": last_name,
         "email": active_user["email"],
         "amount": float(record.price),
-        "currency": "NGN",
-        "tx_ref": "MC-1585230950508",
+        #"currency": "NGN",
+        #"tx_ref": "MC-1585230950508",
     }
 
     try:
@@ -94,6 +95,7 @@ async def start_bank_transfer(
     "is successful. You should pass the ref_id gotten from "
     "the pay endpoint as query params.",
     response_model=schemas.VerifyBankTransfer,
+    include_in_schema=False,
 )
 async def verify_bank_transfer(
     refId: str,
