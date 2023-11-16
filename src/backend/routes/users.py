@@ -1,5 +1,6 @@
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     HTTPException,
     Request,
@@ -66,7 +67,7 @@ def check_user_payload(payload):
             detail="name field should be less than 25 characters",
         )
 
-    if len(payload.email) > 29:
+    if len(payload.email) > 49:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="email length too long",
@@ -315,6 +316,7 @@ class UserRegistrationToken(BaseModel):
 async def register_user(
     payload: schema.RegisterUser,
     db: Annotated[Session, Depends(db_engine.get_db)],
+    bg_task: BackgroundTasks,
     req: Request,
 ):
     """Adds a user to the database"""
@@ -342,8 +344,12 @@ async def register_user(
     #            "request": req
     #        },
     #    ).body.decode()
-    # email_notification.send_email(
-    #    message, temp_data["email"], "WELCOME EMAIL")
+    # bg_task.add_task(
+    #            email_notification.send_email,
+    #           message,
+    #            temp_data["email"],
+    #            "WELCOME EMAIL",
+    #        )
 
     return {
         "msg": "user account created succefully",

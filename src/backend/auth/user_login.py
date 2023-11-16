@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from fastapi.templating import Jinja2Templates
 from fastapi.requests import Request
 from fastapi.responses import RedirectResponse
@@ -137,6 +137,7 @@ class TokenType(Enum):
 async def generate_email_token(
     mail: EmailStr,
     req: Request,
+    bg_task: BackgroundTasks,
     db: Annotated[Session, Depends(db_engine.get_db)],
     verv_type: TokenType,
 ):
@@ -185,9 +186,16 @@ async def generate_email_token(
             },
         ).body.decode()
 
-        email_notification.send_email(
-            message, mail, "Account Verification Required"
-        )
+        #email_notification.send_email(
+        #    message, mail, "Account Verification Required"
+        #)
+
+        bg_task.add_task(
+                email_notification.send_email,
+                message,
+                mail,
+                "Account Verification Required",
+            )
     else:
         message = templates.TemplateResponse(
             "changePassword.html",
@@ -197,9 +205,17 @@ async def generate_email_token(
                 "request": req,
             },
         ).body.decode()
-        email_notification.send_email(
-            message, mail, "IT'S URGENT - Verify password change"
-        )
+
+        #email_notification.send_email(
+        #    message, mail, "IT'S URGENT - Verify password change"
+        #)
+
+        bg_task.add_task(
+                email_notification.send_email,
+                message,
+                mail,
+                "IT'S URGENT - Verify password change",
+            )
 
     return {"token": email_token}
 
