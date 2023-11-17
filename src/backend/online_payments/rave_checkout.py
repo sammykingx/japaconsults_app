@@ -30,10 +30,11 @@ redis = redis_db.redis_factory()
 
 CHECKOUT_ENDPOINT = "https://api.flutterwave.com/v3/payments"
 
-VERIFY_PAYMENT_ENDPOINT = (
+VERIFY_BY_TX_REF = (
     "https://api.flutterwave.com/v3/transactions/verify_by_reference"
 )
 
+VERIFY_BY_ID = "https://api.flutterwave.com/v3/transactions/{}/verify"
 load_dotenv()
 
 HEADER = {
@@ -152,6 +153,8 @@ async def rave_checkout_callback(
 
     return query_params
 
+# demo reponse params
+# status=completed&tx_ref=REF-3400515214&transaction_id=1141230276
 
 def get_rave_link(user_payload):
     """makes the network call to flutterwave api"""
