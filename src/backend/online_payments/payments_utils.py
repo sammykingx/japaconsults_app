@@ -2,9 +2,12 @@
 # The db variable used as parameter signifies the request db session
 
 from fastapi import HTTPException, status
-from models import db_models, db_crud
-import datetime
+from models import db_models, db_crud, redis_db
+from dotenv import load_dotenv
+import datetime, json, requests, os
 
+
+redis = redis_db.redis_factory()
 
 def validate_invoice(db, email, invoiceId):
     """validates invoice record"""
@@ -28,7 +31,7 @@ def has_active_payment(db, invoiceId):
         return False
 
     for record in payment_records:
-        if record.status == "pending":
+        if record.status not in ("cancelled", "failed"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{record.ref_id} still active, kindly complete "
@@ -108,7 +111,7 @@ def failed_transaction(db, ref):
     """ changes the payments status to failed
 
         db: the request db session
-        ref: the payment reference either reference id
+        ref: the payment reference id
     """
 
     payment_record = get_payments_record(db, ref)
@@ -175,18 +178,59 @@ def change_to_checking(db, refId, transaction_id):
     return payment_record
 
 
-def payment_serializer(ref_id, flw_ref, record, active_user, payment_type):
+def add_transaction_id_to_redis_key(refId, transaction_id):
+    """adds the transaction id gotte from payment processor to
+      the redis data.
+
+    @refId: the refId which is the redis key
+    @transaction_id: the payment processor id
+    """
+
+    data = json.loads(redis.get(refId))
+    data.update({"transaction_id": transaction_id})
+    redis.set(refId, json.dumps(data))
+
+
+def verv_api_call(refId, header):
+    """makes the verification call using our refId to verify user payments"""
+
+    param = {"tx_ref" : refId}
+    load_dotenv()
+    try:
+        response = requests.get(
+                        os.getenv("VERIFY_BY_REF"),
+                        headers=HEADER,
+                        params=param,
+                        timeout=5,
+                    ).json()
+
+    except req.exceptions.ConnectionError:
+        raise HTTException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="ERROR: check internet connection",
+        )
+
+    except req.exceptions.ReadTimeout:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="payment processor took too long to respond",
+        )
+
+    return response
+
+
+def payment_serializer(ref_id, record, active_user, checkout_type):
     """serializes the payment record"""
 
     return {
         "ref_id": ref_id,
-        "flw_ref": flw_ref,
+        #"flw_ref": flw_ref,
         #"flw_txRef": resp["txRef"],
         "inv_id": record.inv_id,
         "title": record.title,
         "amount": float(record.price),
         "payer_email": active_user["email"],
         "paid_by": active_user["name"],
-        "payment_type": payment_type,
+        "checkout_type": checkout_type,
         "status": "pending",
     }

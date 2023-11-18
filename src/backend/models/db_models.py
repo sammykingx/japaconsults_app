@@ -210,7 +210,7 @@ class Payments(Base):
     ref_id = Column(
         String(15), primary_key=True, nullable=False, index=True
     )
-    flw_ref = Column(String(50), nullable=False)
+    flw_ref = Column(String(50))
     flw_txRef = Column(String(20))
     inv_id = Column(
         String(16),
@@ -224,4 +224,5 @@ class Payments(Base):
     paid_by = Column(String(30))
     payer_email = Column(String(30))
     paid_at = Column(DateTime)
+    checkout_type = Column(String(15))
     payment_type = Column(String(15))

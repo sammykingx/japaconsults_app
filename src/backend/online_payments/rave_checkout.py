@@ -28,13 +28,6 @@ router = APIRouter(
 
 redis = redis_db.redis_factory()
 
-CHECKOUT_ENDPOINT = "https://api.flutterwave.com/v3/payments"
-
-VERIFY_BY_TX_REF = (
-    "https://api.flutterwave.com/v3/transactions/verify_by_reference"
-)
-
-VERIFY_BY_ID = "https://api.flutterwave.com/v3/transactions/{}/verify"
 load_dotenv()
 
 HEADER = {
@@ -74,13 +67,20 @@ async def rave_checkout(
 
     response = get_rave_link(user_payload)
     pay_link = response["data"]["link"]
-    #our_ref_id = "REF-" + str(round(time.time()) * 2)
-    serialized_data = serialize_to_db(
-        active_user, ref_id, pay_link, record
-    )
 
-    redis.set(ref_id, json.dumps(serialized_data))
+    #our_ref_id = "REF-" + str(round(time.time()) * 2)
+    #serialized_data = serialize_to_db(
+    #    active_user, ref_id, pay_link, record
+    #)
+
+    serialized_data = payments_utils.payment_serializer(
+                            ref_id, record, active_user, "rave_modal"
+                        )
+
+#    redis.set(ref_id, json.dumps(serialized_data))
+
     db_crud.save(db, db_models.Payments, serialized_data)
+    redis.set(ref_id, json.dumps(serialized_data))
 
     return {
         "ref_id": ref_id,
@@ -144,6 +144,10 @@ async def rave_checkout_callback(
                             params.get("transaction_id"),
                         )
     # update redis key to add transaction_id
+    payments_utils.add_transaction_id_to_redis_key(
+            refId, params.get("transaction_id")
+        )
+
     # add background job to verify transaction
 
     return {
@@ -161,7 +165,7 @@ def get_rave_link(user_payload):
 
     try:
         response = req.post(
-            CHECKOUT_ENDPOINT,
+            os.getenv("CHECKOUT_ENDPOINT"),
             headers=HEADER,
             json=user_payload,
             timeout=5,
@@ -203,25 +207,41 @@ def build_payment_payload(
     return payload
 
 
-def serialize_to_db(active_user, ref_id, pay_link, record):
-    """serialize the user data to db format"""
+#def serialize_to_db(active_user, ref_id, pay_link, record):
+#    """serialize the user data to db format"""
+#
+#    live mode
+#    flw_ref = pay_link.removeprefix(
+#        "https://checkout.flutterwave.com/v3/hosted/pay/"
+#    )
 
-    # live mode
-    flw_ref = pay_link.removeprefix(
-        "https://checkout.flutterwave.com/v3/hosted/pay/"
-    )
+#    test mode
+#    flw_ref = pay_link.split("/hosted/pay/")[-1]
 
-    # test mode
-    #flw_ref = pay_link.split("/hosted/pay/")[-1]
+#    all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
 
-    #all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
+#    serialized_data = payments_utils.payment_serializer(
+#                            ref_id,
+#                            flw_ref,
+#                            record,
+#                            active_user,
+#                            "rave modal"
+#                    )
+#
+#    return serialized_data
 
-    serialized_data = payments_utils.payment_serializer(
-                            ref_id,
-                            flw_ref,
-                            record,
-                            active_user,
-                            "rave modal"
-                    )
 
-    return serialized_data
+def verify_payments_with_rave(refId):
+    """verify if the user payment is succssfull or not"""
+
+    if not redis.exists(refId):
+        raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid reference id",
+                )
+    # mak the api call
+    resp = payments_utils.verv_api_call(refid, HEADER,)
+
+    # check the resp status, check chargd_amount
+    # get the transaction id, flw_ref, payment_type
+
