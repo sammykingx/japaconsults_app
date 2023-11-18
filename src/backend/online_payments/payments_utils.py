@@ -125,6 +125,7 @@ def update_invoice_to_paid(
     invoice_record,
     payment_record,
     payment_timestamp,
+    status
 ):
     """updates invoices record to paid"""
 
@@ -132,17 +133,26 @@ def update_invoice_to_paid(
     invoice_record.ref_id = payment_record.ref_id
     invoice_record.flw_txref = payment_record.flw_txRef
     invoice_record.paid_at = payment_timestamp
+    invoice_record.status = status
 
 
-def update_payments_to_paid(payment_record, payment_timestamp):
+def update_payments_to_paid(
+    payment_record,
+    payment_timestamp,
+    payment_type,
+    amount,
+    status
+):
     """updates the payment record to paid"""
 
     payment_record.paid = True
     payment_record.paid_at = payment_timestamp
-    payment_record.status = "paid"
+    payment_record.paid_amount = amount
+    payment_record.status = status
+    payment_record.payment_type  = payment_type
 
 
-def successfull_transaction(db, refId):
+def complete_transaction(db, refId, payment_type, amount, status):
     """updates the payments and invoice table upon successfull payments"""
 
     payment_timestamp = datetime.datetime.utcnow()
@@ -152,9 +162,19 @@ def successfull_transaction(db, refId):
     invoice_record = get_invoice(db, payment_record.inv_id)
 
     # update records
-    update_payments_to_paid(payment_record, payment_timestamp)
-    update_invoice_to_paid(
-            invoice_record, payment_record, payment_timestamp
+    update_payments_record(
+            payment_record,
+            payment_timestamp,
+            payment_type,
+            amount,
+            status,
+        )
+
+    update_invoice_record(
+            invoice_record,
+            payment_record,
+            payment_timestamp,
+            status
         )
 
     db.commit()
@@ -189,6 +209,15 @@ def add_transaction_id_to_redis_key(refId, transaction_id):
     data = json.loads(redis.get(refId))
     data.update({"transaction_id": transaction_id})
     redis.set(refId, json.dumps(data))
+
+
+def is_amount_complete(record, api_resp):
+    """checks the paid amount of the customer"""
+
+    if record.amount > api_resp["charged_amount"]:
+        return True
+
+    return False
 
 
 def verv_api_call(refId, header):

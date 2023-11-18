@@ -160,6 +160,59 @@ async def rave_checkout_callback(
 # demo reponse params
 # status=completed&tx_ref=REF-3400515214&transaction_id=1141230276
 
+
+@router.get(
+    "/verifyPayments",
+    summary="Verify's if the users payment was successful",
+    description="This endpoint verifies the users payment status "
+                "with payment processor before the record is updated."
+                "Should be called in situations where there's delay"
+                " from users bank in validating payments.",
+)
+async def verify_user_payments(
+    refId: str,
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """verifies the users payments wwith rave"""
+
+    payment_record = payments_utils.db_crud.get_specific_record(
+                            db, db_models.Payments, ref_id=refId
+                        )
+
+    if not payment_record:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid reference id sent",
+            )
+
+    elif payment_record.status == "paid":
+        return {"msg": "payment already verified"}
+
+    # bg_process from here
+    resp = payments_utils.verv_api_call(refid, HEADER)
+    if not resp["status"] == "success":
+        return {"status": resp["status"]}
+
+    # check amount
+    if payments_utils.is_amount_complete(record, resp["data"]):
+        status = "paid"
+
+    else:
+        status = "incomplete"
+
+    payments_utils.complete_transaction(
+            db,
+            refId,
+            resp["payment_type"],
+            resp["charged_amount"],
+            status,
+        )
+        
+    redis.delete(refId)
+
+    return {"msg": "payment verified"}
+
+
 def get_rave_link(user_payload):
     """makes the network call to flutterwave api"""
 
@@ -240,8 +293,13 @@ def verify_payments_with_rave(refId):
                     detail="Invalid reference id",
                 )
     # mak the api call
-    resp = payments_utils.verv_api_call(refid, HEADER,)
+    resp = payments_utils.verv_api_call(refid, HEADER)
 
     # check the resp status, check chargd_amount
     # get the transaction id, flw_ref, payment_type
 
+# get session
+# get payment record
+# make the verv call
+# check the status of response
+# check the charged amount
