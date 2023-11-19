@@ -160,7 +160,8 @@ def complete_transaction(
     payment_type,
     amount,
     status,
-    flw_ref=None,):
+    flw_ref
+):
     """updates the payments and invoice table upon successfull payments"""
 
     payment_timestamp = datetime.datetime.utcnow()
@@ -194,12 +195,12 @@ def complete_transaction(
     return invoice_record
 
 
-def change_to_checking(db, refId, transaction_id):
+def change_to_checking(db, payment_record, transaction_id, status):
     """changes the payment transaction status to checking"""
 
-    payment_record = get_payments_record(db, refId)
+#    payment_record = get_payments_record(db, refId)
     payment_record.flw_txRef = transaction_id
-    payment_record.status = "checking"
+    payment_record.status = status
 
     db.commit()
     db.refresh(payment_record)
@@ -207,11 +208,11 @@ def change_to_checking(db, refId, transaction_id):
     return payment_record
 
 
-def update_payment_status(db, payment_record,, status):
+def update_payment_status(db, payment_record, status):
     """updates the payment status"""
 
 #    payment_record = get_payments_record(db, refId)
-    payment_record.status = "checking"
+    payment_record.status = status
 
     db.commit()
     db.refresh(payment_record)
@@ -275,7 +276,7 @@ def confirm_user_payments(refId, HEADER):
     payment_record = get_payments_record(db_session, refId)
 
     resp = verv_api_call(refId, HEADER)
-    if not resp["status"] == "success":
+    if resp["status"] != "success":
         update_payment_status(
             db_session,
             payment_record,

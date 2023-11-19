@@ -100,26 +100,28 @@ async def rave_checkout(
 async def rave_checkout_callback(
     req_url: Request,
     bg_task: BackgroundTasks,
-    #active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """Verify's user payments"""
-
-   # raise HTTPException(
-   #     status_code=status.HTTP_501_NOT_IMPLEMENTED,
-   #     detail="Endpoint still in development",
-   # )
 
     query_params = str(req_url.query_params)
     params = dict(item.split("=") for item in query_params.split("&"))
 
     print(params)
 
+    payment_record = payments_utils.get_payments_record(
+                            db, params.get("tx_ref")
+                        )
+
     # status can be cancelled, failed, completed.
     if params.get("status") == "cancelled":
+        payments_utils.update_payment_status(
+            db, payment_record, "cancelled"
+        )
+
         # update record with txref to cancelled
-        payment_record = payments_utils.cancell_transaction(
-                                db, params.get("tx_ref"))
+        #payment_record = payments_utils.cancell_transaction(
+        #                        db, params.get("tx_ref"))
 
         redis.delete(params.get("tx_ref"))
         return {
@@ -128,8 +130,9 @@ async def rave_checkout_callback(
             }
 
     elif params.get("status") == "failed":
-        payment_record = payments_utils.failed_transaction(
-                                db, params.get("tx_ref"))
+        payments_utils.update_payment_status(
+            db, payment_record, "failed"
+        )
 
         redis.delete(params.get("tx_ref"))
         return {
@@ -138,11 +141,10 @@ async def rave_checkout_callback(
             }
 
     # change transaction to checking awaiting call to verification endpoint
-    payment_record = payments_utils.change_to_checking(
-                            db,
-                            params.get("tx_ref"),
-                            params.get("transaction_id"),
-                        )
+    payments_utils.change_to_checking(
+        db, payment_record, params.get("transaction_id"), "checking"
+    )
+
     # update redis key to add transaction_id
     payments_utils.add_transaction_id_to_redis_key(
             refId, params.get("transaction_id")
