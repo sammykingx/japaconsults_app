@@ -2,7 +2,7 @@
 # The db variable used as parameter signifies the request db session
 
 from fastapi import HTTPException, status
-from models import db_models, db_crud, redis_db
+from models import db_engine, db_models, db_crud, redis_db
 from dotenv import load_dotenv
 import datetime, json, requests, os
 
@@ -121,13 +121,13 @@ def failed_transaction(db, ref):
     return payment_record
 
 
-def update_invoice_to_paid(
+def update_invoice_record(
     invoice_record,
     payment_record,
     payment_timestamp,
     status
 ):
-    """updates invoices record to paid"""
+    """updates invoices record"""
 
     invoice_record.paid = True
     invoice_record.ref_id = payment_record.ref_id
@@ -136,12 +136,13 @@ def update_invoice_to_paid(
     invoice_record.status = status
 
 
-def update_payments_to_paid(
+def update_payments_record(
     payment_record,
     payment_timestamp,
     payment_type,
     amount,
-    status
+    status,
+    flw_ref
 ):
     """updates the payment record to paid"""
 
@@ -150,9 +151,16 @@ def update_payments_to_paid(
     payment_record.paid_amount = amount
     payment_record.status = status
     payment_record.payment_type  = payment_type
+    payment_record.flw_ref = flw_ref
 
 
-def complete_transaction(db, refId, payment_type, amount, status):
+def complete_transaction(
+    db,
+    refId,
+    payment_type,
+    amount,
+    status,
+    flw_ref=None,):
     """updates the payments and invoice table upon successfull payments"""
 
     payment_timestamp = datetime.datetime.utcnow()
@@ -168,6 +176,7 @@ def complete_transaction(db, refId, payment_type, amount, status):
             payment_type,
             amount,
             status,
+            flw_ref,
         )
 
     update_invoice_record(
@@ -198,6 +207,16 @@ def change_to_checking(db, refId, transaction_id):
     return payment_record
 
 
+def update_payment_status(db, payment_record,, status):
+    """updates the payment status"""
+
+#    payment_record = get_payments_record(db, refId)
+    payment_record.status = "checking"
+
+    db.commit()
+    db.refresh(payment_record)
+
+
 def add_transaction_id_to_redis_key(refId, transaction_id):
     """adds the transaction id gotte from payment processor to
       the redis data.
@@ -211,10 +230,10 @@ def add_transaction_id_to_redis_key(refId, transaction_id):
     redis.set(refId, json.dumps(data))
 
 
-def is_amount_complete(record, api_resp):
+def is_amount_complete(record, data):
     """checks the paid amount of the customer"""
 
-    if record.amount > api_resp["charged_amount"]:
+    if record.amount >= data["charged_amount"]:
         return True
 
     return False
@@ -246,6 +265,43 @@ def verv_api_call(refId, header):
         )
 
     return response
+
+
+def confirm_user_payments(refId, HEADER):
+    """confirm users payments with rave"""
+
+    db_session = next(db_engine.get_db())
+
+    payment_record = get_payments_record(db_session, refId)
+
+    resp = verv_api_call(refId, HEADER)
+    if not resp["status"] == "success":
+        update_payment_status(
+            db_session,
+            payment_record,
+            resp["status"]
+        )
+
+        return {"status": resp["status"]}
+
+    if is_amount_complete(payment_record, resp["data"]):
+        status = "paid"
+
+    else:
+        status = "incomplete"
+
+    complete_transaction(
+            db_session,
+            refId,
+            resp["payment_type"],
+            resp["charged_amount"],
+            status,
+            resp["data"]["flw_ref"],
+        )
+
+    redis.delete(refId)
+
+    return {"msg": "payment verified"}
 
 
 def payment_serializer(ref_id, record, active_user, checkout_type):

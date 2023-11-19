@@ -115,7 +115,7 @@ async def rave_checkout_callback(
 
     print(params)
 
-    # status can be cancelled, failed,
+    # status can be cancelled, failed, completed.
     if params.get("status") == "cancelled":
         # update record with txref to cancelled
         payment_record = payments_utils.cancell_transaction(
@@ -148,10 +148,15 @@ async def rave_checkout_callback(
             refId, params.get("transaction_id")
         )
 
-    # add background job to verify transaction
+    # add backg_round job to verify transaction
+    bg_task.add_task(
+        payments_utils.confirm_user_payments,
+        params.get("tx_ref"),
+        HEADER
+    )
 
     return {
-            "status": payment_record.status,
+            "status": params.get("status"),
             "ref_id": params.get("tx_ref"),
         }
 
@@ -171,46 +176,52 @@ async def rave_checkout_callback(
 )
 async def verify_user_payments(
     refId: str,
-    db: Annotated[Session, Depends(db_engine.get_db)],
+    #db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """verifies the users payments wwith rave"""
+    """verifies the users payments with rave"""
 
-    payment_record = payments_utils.db_crud.get_specific_record(
-                            db, db_models.Payments, ref_id=refId
-                        )
+#    payment_record = db_crud.get_specific_record(
+#                        db, db_models.Payments, ref_id=refId
+#                    )
+#
+#    if not payment_record:
+#        raise HTTPException(
+#                status_code=status.HTTP_400_BAD_REQUEST,
+#                detail="Invalid reference id sent",
+#            )
+#
+#    elif payment_record.status == "paid":
+#        return {"msg": "payment already verified"}
+#
+#    bg_process from here
+#    resp = payments_utils.verv_api_call(refid, HEADER)
+#    if not resp["status"] == "success":
+#        payments_utils.update_payment_status(db, refId, resp["status"])
+#        return {"status": resp["status"]}
+#
+#    check amount
+#    if payments_utils.is_amount_complete(payment_record, resp["data"]):
+#        status = "paid"
+#
+#    else:
+#        status = "incomplete"
+#
+#    payments_utils.complete_transaction(
+#            db,
+#            refId,
+#            resp["payment_type"],
+#            resp["charged_amount"],
+#            status,
+#            resp["data"]["flw_ref"],
+#        )
 
-    if not payment_record:
-        raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reference id sent",
-            )
+    if not redis.exists(refId):
+        return {"msg": "payment verification complete"}
 
-    elif payment_record.status == "paid":
-        return {"msg": "payment already verified"}
-
-    # bg_process from here
-    resp = payments_utils.verv_api_call(refid, HEADER)
-    if not resp["status"] == "success":
-        return {"status": resp["status"]}
-
-    # check amount
-    if payments_utils.is_amount_complete(record, resp["data"]):
-        status = "paid"
-
-    else:
-        status = "incomplete"
-
-    payments_utils.complete_transaction(
-            db,
-            refId,
-            resp["payment_type"],
-            resp["charged_amount"],
-            status,
-        )
-        
+    response = payments_utils.confirm_user_payments(refId, HEADER)
     redis.delete(refId)
 
-    return {"msg": "payment verified"}
+    return response
 
 
 def get_rave_link(user_payload):
