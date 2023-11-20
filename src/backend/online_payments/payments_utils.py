@@ -125,7 +125,7 @@ def update_invoice_record(
     invoice_record,
     payment_record,
     payment_timestamp,
-    status
+    tx_status
 ):
     """updates invoices record"""
 
@@ -133,7 +133,7 @@ def update_invoice_record(
     invoice_record.ref_id = payment_record.ref_id
     invoice_record.flw_txref = payment_record.flw_txRef
     invoice_record.paid_at = payment_timestamp
-    invoice_record.status = status
+    invoice_record.status = tx_status
 
 
 def update_payments_record(
@@ -141,17 +141,19 @@ def update_payments_record(
     payment_timestamp,
     payment_type,
     amount,
-    status,
-    flw_ref
+    tx_status,
+    flw_ref=None
 ):
     """updates the payment record to paid"""
+
+    if flw_ref:
+        payment_record.flw_ref = flw_ref
 
     payment_record.paid = True
     payment_record.paid_at = payment_timestamp
     payment_record.paid_amount = amount
-    payment_record.status = status
+    payment_record.status = tx_status
     payment_record.payment_type  = payment_type
-    payment_record.flw_ref = flw_ref
 
 
 def complete_transaction(
@@ -159,7 +161,7 @@ def complete_transaction(
     refId,
     payment_type,
     amount,
-    status,
+    tx_status,
     flw_ref
 ):
     """updates the payments and invoice table upon successfull payments"""
@@ -176,7 +178,7 @@ def complete_transaction(
             payment_timestamp,
             payment_type,
             amount,
-            status,
+            tx_status,
             flw_ref,
         )
 
@@ -184,7 +186,7 @@ def complete_transaction(
             invoice_record,
             payment_record,
             payment_timestamp,
-            status
+            tx_status
         )
 
     db.commit()
@@ -195,12 +197,12 @@ def complete_transaction(
     return invoice_record
 
 
-def change_to_checking(db, payment_record, transaction_id, status):
+def change_to_checking(db, payment_record, transaction_id, tx_status):
     """changes the payment transaction status to checking"""
 
 #    payment_record = get_payments_record(db, refId)
     payment_record.flw_txRef = transaction_id
-    payment_record.status = status
+    payment_record.status = tx_status
 
     db.commit()
     db.refresh(payment_record)
@@ -208,11 +210,11 @@ def change_to_checking(db, payment_record, transaction_id, status):
     return payment_record
 
 
-def update_payment_status(db, payment_record, status):
+def update_payment_status(db, payment_record, tx_status):
     """updates the payment status"""
 
 #    payment_record = get_payments_record(db, refId)
-    payment_record.status = status
+    payment_record.status = tx_status
 
     db.commit()
     db.refresh(payment_record)
@@ -234,7 +236,7 @@ def add_transaction_id_to_redis_key(refId, transaction_id):
 def is_amount_complete(record, data):
     """checks the paid amount of the customer"""
 
-    if record.amount >= data["charged_amount"]:
+    if data["charged_amount"] > record.amount:
         return True
 
     return False
@@ -248,18 +250,18 @@ def verv_api_call(refId, header):
     try:
         response = requests.get(
                         os.getenv("VERIFY_BY_REF"),
-                        headers=HEADER,
+                        headers=header,
                         params=param,
                         timeout=5,
                     ).json()
 
-    except req.exceptions.ConnectionError:
+    except requests.exceptions.ConnectionError:
         raise HTTException(
             status_code=status.HTTP_408_REQUEST_TIMEOUT,
             detail="ERROR: check internet connection",
         )
 
-    except req.exceptions.ReadTimeout:
+    except requests.exceptions.ReadTimeout:
         raise HTTPException(
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="payment processor took too long to respond",
@@ -268,14 +270,14 @@ def verv_api_call(refId, header):
     return response
 
 
-def confirm_user_payments(refId, HEADER):
+def confirm_user_payments(refId, header):
     """confirm users payments with rave"""
 
     db_session = next(db_engine.get_db())
 
     payment_record = get_payments_record(db_session, refId)
 
-    resp = verv_api_call(refId, HEADER)
+    resp = verv_api_call(refId, header)
     if resp["status"] != "success":
         update_payment_status(
             db_session,
@@ -283,26 +285,33 @@ def confirm_user_payments(refId, HEADER):
             resp["status"]
         )
 
-        return {"status": resp["status"]}
+        return {
+                "status": resp["status"],
+                "msg": "check back later",
+            }
 
     if is_amount_complete(payment_record, resp["data"]):
-        status = "paid"
+        tx_status = "paid"
 
     else:
-        status = "incomplete"
-
+        tx_status = "incomplete"
+    
+    print(resp)
     complete_transaction(
             db_session,
             refId,
-            resp["payment_type"],
-            resp["charged_amount"],
-            status,
+            resp["data"]["payment_type"],
+            resp["data"]["charged_amount"],
+            tx_status,
             resp["data"]["flw_ref"],
         )
 
     redis.delete(refId)
 
-    return {"msg": "payment verified"}
+    return {
+            "status": resp["status"],
+            "msg": "payment verified",
+        }
 
 
 def payment_serializer(ref_id, record, active_user, checkout_type):

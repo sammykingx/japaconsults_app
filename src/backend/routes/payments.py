@@ -331,6 +331,7 @@ def payments_serializer(record):
         "paid": record.paid,
         "status": record.status,
         "paid_at": record.paid_at,
+        "paid_amount": record.paid_amount,
         "payer_email": record.payer_email,
         "payment_type": record.payment_type,
     }

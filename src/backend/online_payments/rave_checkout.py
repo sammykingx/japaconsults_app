@@ -162,12 +162,76 @@ async def rave_checkout_callback(
             "ref_id": params.get("tx_ref"),
         }
 
-    return query_params
-
 # demo reponse params
 # status=completed&tx_ref=REF-3400515214&transaction_id=1141230276
 
 
+@router.get(
+    "/paymentCallback",
+    summary="chcks the transaction status immediately after user payment",
+    description="This endpoint should be called by the frontend immediately"
+    " after user completes payment process. The backend then verify's the"
+    " the users payments if it was cancelled, completed or failed",
+)
+async def payment__callback(
+    tx_ref: str,
+    tx_status: str,
+    bg_task: BackgroundTasks,
+    db: Annotated[Session, Depends(db_engine.get_db)],
+    transaction_id: int | None = None,
+):
+    """payment callback to verify payment
+
+    @tx_ref: the tx_ref mathes the ref_id attahed to payload during checkout
+    @tx_status: the status of the users payments
+    @transaction_id: only present when status param is completed
+    """
+
+    check_parameter_integrity(tx_ref, tx_status, transaction_id)
+
+    payment_record = payments_utils.get_payments_record(
+                            db, tx_ref
+                        )
+
+    if tx_status == "cancelled":
+        payments_utils.update_payment_status(
+            db, payment_record, "cancelled"
+        )
+
+        redis.delete(tx_ref)
+        return {
+                "status": tx_status,
+                "ref_id": tx_ref,
+            }
+
+    elif tx_status == "failed":
+        payments_utils.update_payment_status(
+            db, payment_record, "failed"
+        )
+
+        redis.delete(tx_ref)
+
+    payments_utils.change_to_checking(
+            db, payment_record, transaction_id, "checking"
+        )
+
+    payments_utils.add_transaction_id_to_redis_key(
+            refId, transaction_id
+        )
+
+    bg_task.add_task(
+        payments_utils.confirm_user_payments,
+        tx_ref,
+        HEADER
+    )
+
+    return {
+            "status": tx_status,
+            "ref_id": tx_ref,
+        }
+
+
+# checked
 @router.get(
     "/verifyPayments",
     summary="Verify's if the users payment was successful",
@@ -176,46 +240,8 @@ async def rave_checkout_callback(
                 "Should be called in situations where there's delay"
                 " from users bank in validating payments.",
 )
-async def verify_user_payments(
-    refId: str,
-    #db: Annotated[Session, Depends(db_engine.get_db)],
-):
+async def verify_user_payments(refId: str) -> dict:
     """verifies the users payments with rave"""
-
-#    payment_record = db_crud.get_specific_record(
-#                        db, db_models.Payments, ref_id=refId
-#                    )
-#
-#    if not payment_record:
-#        raise HTTPException(
-#                status_code=status.HTTP_400_BAD_REQUEST,
-#                detail="Invalid reference id sent",
-#            )
-#
-#    elif payment_record.status == "paid":
-#        return {"msg": "payment already verified"}
-#
-#    bg_process from here
-#    resp = payments_utils.verv_api_call(refid, HEADER)
-#    if not resp["status"] == "success":
-#        payments_utils.update_payment_status(db, refId, resp["status"])
-#        return {"status": resp["status"]}
-#
-#    check amount
-#    if payments_utils.is_amount_complete(payment_record, resp["data"]):
-#        status = "paid"
-#
-#    else:
-#        status = "incomplete"
-#
-#    payments_utils.complete_transaction(
-#            db,
-#            refId,
-#            resp["payment_type"],
-#            resp["charged_amount"],
-#            status,
-#            resp["data"]["flw_ref"],
-#        )
 
     if not redis.exists(refId):
         return {"msg": "payment verification complete"}
@@ -226,7 +252,7 @@ async def verify_user_payments(
     return response
 
 
-def get_rave_link(user_payload):
+def get_rave_link(user_payload) -> dict:
     """makes the network call to flutterwave api"""
 
     try:
@@ -273,46 +299,24 @@ def build_payment_payload(
     return payload
 
 
-#def serialize_to_db(active_user, ref_id, pay_link, record):
-#    """serialize the user data to db format"""
-#
-#    live mode
-#    flw_ref = pay_link.removeprefix(
-#        "https://checkout.flutterwave.com/v3/hosted/pay/"
-#    )
+def check_parameter_integrity(tx_ref, tx_status, transaction_id):
+    """checks integrity of query params"""
 
-#    test mode
-#    flw_ref = pay_link.split("/hosted/pay/")[-1]
+    if not redis.exists(tx_ref):
+         raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid tx_ref value, check and try again",
+            )
 
-#    all_ref = {"flwRef": flw_ref, "txRef": flw_txref}
-
-#    serialized_data = payments_utils.payment_serializer(
-#                            ref_id,
-#                            flw_ref,
-#                            record,
-#                            active_user,
-#                            "rave modal"
-#                    )
-#
-#    return serialized_data
-
-
-def verify_payments_with_rave(refId):
-    """verify if the user payment is succssfull or not"""
-
-    if not redis.exists(refId):
+    if tx_status not in ("cancelled", "completed", "failed"):
         raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Invalid reference id",
-                )
-    # mak the api call
-    resp = payments_utils.verv_api_call(refid, HEADER)
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Unrecognized transaction status => '{tx_status}'",
+            )
 
-    # check the resp status, check chargd_amount
-    # get the transaction id, flw_ref, payment_type
-
-# get session
-# get payment record
-# make the verv call
-# check the status of response
-# check the charged amount
+    if tx_status == "completed" and transaction_id == None:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"transaction id can't be empty when tx_status is "
+                        "completed",
+            )

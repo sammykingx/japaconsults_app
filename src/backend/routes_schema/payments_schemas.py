@@ -19,6 +19,7 @@ class PaymentResponse(PendingPayments, BaseModel):
     #paid_by: str | None
     #amount: float
     paid_at: datetime | None
+    paid_amount: float | None
     #payment_type: str
 
 
