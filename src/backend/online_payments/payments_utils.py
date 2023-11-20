@@ -14,6 +14,7 @@ def validate_invoice(db, email, invoiceId):
 
     invoice_record = get_invoice(db, invoiceId)
     is_empty(invoice_record)
+    is_paid(invoice_record)
     check_assignee(email, invoice_record)
     is_expired(invoice_record)
     has_active_payment(db, invoiceId)
@@ -31,11 +32,21 @@ def has_active_payment(db, invoiceId):
         return False
 
     for record in payment_records:
-        if record.status not in ("cancelled", "failed"):
+        if record.status in ("checking", "pending"):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{record.ref_id} still active, kindly complete "
                        "transaction",
+            )
+
+
+def is_paid(record):
+    """checks if the invoice is already paid"""
+
+    if record.paid:
+        raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invoice is already paid",
             )
 
 
@@ -91,34 +102,6 @@ def get_payments_record(db, refId):
     )
 
     return record
-
-
-def cancell_transaction(db, ref):
-    """ changes the payments status to cancelled
-
-        db: the request db session
-        ref: the payment reference either reference id
-    """
-
-    payment_record = get_payments_record(db, ref)
-    payment_record.status = "cancelled"
-    db.commit()
-    db.refresh(payment_record)
-    return payment_record
-
-
-def failed_transaction(db, ref):
-    """ changes the payments status to failed
-
-        db: the request db session
-        ref: the payment reference id
-    """
-
-    payment_record = get_payments_record(db, ref)
-    payment_record.status = "failed"
-    db.commit()
-    db.refresh(payment_record)
-    return payment_record
 
 
 def update_invoice_record(
@@ -267,7 +250,7 @@ def verv_api_call(refId, header):
             detail="payment processor took too long to respond",
         )
 
-    print("inside verv api call\n", response)
+   # print("inside verv api call\n", response)
 
     return response
 
@@ -298,7 +281,6 @@ def confirm_user_payments(refId, header):
     else:
         tx_status = "incomplete"
     
-    print(resp)
     complete_transaction(
             db_session,
             refId,
@@ -316,12 +298,17 @@ def confirm_user_payments(refId, header):
         }
 
 
-def payment_serializer(ref_id, record, active_user, checkout_type):
+def payment_serializer(
+    ref_id,
+    record,
+    active_user,
+    checkout_type,
+    flw_ref=None
+):
     """serializes the payment record"""
 
-    return {
+    data = {
         "ref_id": ref_id,
-        #"flw_ref": flw_ref,
         #"flw_txRef": resp["txRef"],
         "inv_id": record.inv_id,
         "title": record.title,
@@ -331,3 +318,8 @@ def payment_serializer(ref_id, record, active_user, checkout_type):
         "checkout_type": checkout_type,
         "status": "pending",
     }
+
+    if flw_ref:
+        data.update({"flw_ref": flw_ref})
+
+    return data

@@ -20,6 +20,10 @@ router = APIRouter(
     prefix="/raveCheckout",
     tags=["Flutterwave Checkout"],
     responses={
+        400: {
+            "description": "Bad/Invalid request",
+        },
+
         500: {
             "description": "Internal server error",
         }
@@ -68,16 +72,9 @@ async def rave_checkout(
     response = get_rave_link(user_payload)
     pay_link = response["data"]["link"]
 
-    #our_ref_id = "REF-" + str(round(time.time()) * 2)
-    #serialized_data = serialize_to_db(
-    #    active_user, ref_id, pay_link, record
-    #)
-
     serialized_data = payments_utils.payment_serializer(
                             ref_id, record, active_user, "rave_modal"
                         )
-
-#    redis.set(ref_id, json.dumps(serialized_data))
 
     db_crud.save(db, db_models.Payments, serialized_data)
     redis.set(ref_id, json.dumps(serialized_data))
@@ -96,6 +93,7 @@ async def rave_checkout(
     description="This endpoint is automatically called by payment processor"
     " after user completes payment process. We then verify the"
     " the users payments if it was successful or cancelled",
+    response_model=payment_schema.CallbackResponse,
 )
 async def rave_checkout_callback(
     req_url: Request,
@@ -107,7 +105,7 @@ async def rave_checkout_callback(
     query_params = str(req_url.query_params)
     params = dict(item.split("=") for item in query_params.split("&"))
 
-    print(params)
+    #print(params)
 
     payment_record = payments_utils.get_payments_record(
                             db, params.get("tx_ref")
@@ -118,10 +116,6 @@ async def rave_checkout_callback(
         payments_utils.update_payment_status(
             db, payment_record, "cancelled"
         )
-
-        # update record with txref to cancelled
-        #payment_record = payments_utils.cancell_transaction(
-        #                        db, params.get("tx_ref"))
 
         redis.delete(params.get("tx_ref"))
         return {
@@ -172,6 +166,7 @@ async def rave_checkout_callback(
     description="This endpoint should be called by the frontend immediately"
     " after user completes payment process. The backend then verify's the"
     " the users payments if it was cancelled, completed or failed",
+    response_model=payment_schema.CallbackResponse,
 )
 async def payment_callback(
     tx_ref: str,
@@ -231,7 +226,6 @@ async def payment_callback(
         }
 
 
-# checked
 @router.get(
     "/verifyPayments",
     summary="Verify's if the users payment was successful",
@@ -239,12 +233,16 @@ async def payment_callback(
                 "with payment processor before the record is updated."
                 "Should be called in situations where there's delay"
                 " from users bank in validating payments.",
+    response_model=payment_schema.RaveVerifyPayments,
 )
 async def verify_user_payments(refId: str) -> dict:
     """verifies the users payments with rave"""
 
     if not redis.exists(refId):
-        return {"msg": "payment verification complete"}
+        return {
+                "status": "completed",
+                "msg": "payment verification complete",
+            }
 
     response = payments_utils.confirm_user_payments(refId, HEADER)
     redis.delete(refId)

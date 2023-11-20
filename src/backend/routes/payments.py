@@ -184,11 +184,8 @@ async def cancell_transaction(
 
 @router.get(
     "/{refId}",
-    summary="see transaction details",
-    description="The transaction reference 'refId' is passed as "
-    "query parameter in verifying if a payment was successfull.Once "
-    "it's successful, the payment record is updated.",
-    #include_in_schema=False,
+    summary="see transaction details by reference id",
+    description="Returns full details of any transaction by its's ref id",
 )
 async def payment_details_by_ref(
     refId: str,

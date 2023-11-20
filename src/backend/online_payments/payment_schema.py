@@ -74,3 +74,13 @@ class RaveCheckoutResponse(BaseModel):
     status: str
     link: str
     link_type: str
+
+
+class RaveVerifyPayments(BaseModel):
+    status: str
+    msg: str
+
+
+class CallbackResponse(BaseModel):
+    status: str
+    ref_id: str
