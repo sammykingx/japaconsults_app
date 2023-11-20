@@ -236,7 +236,7 @@ def add_transaction_id_to_redis_key(refId, transaction_id):
 def is_amount_complete(record, data):
     """checks the paid amount of the customer"""
 
-    if data["charged_amount"] > record.amount:
+    if data["charged_amount"] >= record.amount:
         return True
 
     return False
@@ -266,6 +266,8 @@ def verv_api_call(refId, header):
             status_code=status.HTTP_504_GATEWAY_TIMEOUT,
             detail="payment processor took too long to respond",
         )
+
+    print("inside verv api call\n", response)
 
     return response
 

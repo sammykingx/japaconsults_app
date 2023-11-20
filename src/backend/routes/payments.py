@@ -183,19 +183,19 @@ async def cancell_transaction(
 
 
 @router.get(
-    "/verifyPayments",
-    summary="Verify's any pending payments",
+    "/{refId}",
+    summary="see transaction details",
     description="The transaction reference 'refId' is passed as "
     "query parameter in verifying if a payment was successfull.Once "
     "it's successful, the payment record is updated.",
-    include_in_schema=False,
+    #include_in_schema=False,
 )
-async def reVerify_payments(
+async def payment_details_by_ref(
     refId: str,
-    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    #active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """re_validates payments"""
+    """gets the transaction details"""
 
     record = db_crud.get_specific_record(
                     db, db_models.Payments, ref_id=refId
@@ -204,10 +204,7 @@ async def reVerify_payments(
     check_record(record)
     # make a network call to verify payment
 
-    raise HTTPException(
-            status_code=status.HTTP_501_NOT_IMPLEMENTED,
-            detail="Endpoint still in development",
-        )
+    return record
 
 
 @router.get(

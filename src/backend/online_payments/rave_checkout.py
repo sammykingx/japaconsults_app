@@ -147,7 +147,7 @@ async def rave_checkout_callback(
 
     # update redis key to add transaction_id
     payments_utils.add_transaction_id_to_redis_key(
-            refId, params.get("transaction_id")
+            params.get("tx_ref"), params.get("transaction_id")
         )
 
     # add backg_round job to verify transaction
@@ -173,7 +173,7 @@ async def rave_checkout_callback(
     " after user completes payment process. The backend then verify's the"
     " the users payments if it was cancelled, completed or failed",
 )
-async def payment__callback(
+async def payment_callback(
     tx_ref: str,
     tx_status: str,
     bg_task: BackgroundTasks,
@@ -216,7 +216,7 @@ async def payment__callback(
         )
 
     payments_utils.add_transaction_id_to_redis_key(
-            refId, transaction_id
+            tx_ref, transaction_id
         )
 
     bg_task.add_task(
