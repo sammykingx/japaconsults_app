@@ -174,12 +174,14 @@ async def cancell_transaction(
     if not redis.exists(refId):
         raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid reference id",
+                detail="transaction with 'ref_id' already completed or "
+                       "terminated/cancelled.",
             )
 
-    cancelled_payment = payments_utils.cancell_transaction(db, refId)
+    payment_record = payments_utils.get_payments_record(db, refId)
+    payments_utils.update_payment_status(db, payment_record, "cancelled")
     redis.delete(refId)
-    return cancelled_payment
+    return payment_record
 
 
 @router.get(
@@ -189,7 +191,7 @@ async def cancell_transaction(
 )
 async def payment_details_by_ref(
     refId: str,
-    #active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
     """gets the transaction details"""

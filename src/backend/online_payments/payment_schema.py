@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field
 from typing import Annotated
+import datetime
 
 
 class CardPayments(BaseModel):
@@ -60,8 +61,9 @@ class BankTransferResponse(BaseModel):
     ref_id: str
     bank_name: str
     bank_account: str
-    expires_in: int
+    expires_in: datetime.datetime
     message: str
+    transfer_amount: float | int
 
 
 class VerifyBankTransfer(BaseModel):

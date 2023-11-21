@@ -9,7 +9,7 @@ from fastapi import (
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, redis_db
-from online_payments import payments_utils, payment_schema
+from online_payments import flutterwave, payments_utils, payment_schema
 from dotenv import load_dotenv
 from typing import Annotated
 import requests as req
@@ -17,8 +17,8 @@ import json, os, time
 
 
 router = APIRouter(
-    prefix="/raveCheckout",
-    tags=["Flutterwave Checkout"],
+    prefix="/flutterwave",
+    tags=["Flutterwave"],
     responses={
         400: {
             "description": "Bad/Invalid request",
@@ -34,13 +34,11 @@ redis = redis_db.redis_factory()
 
 load_dotenv()
 
-HEADER = {
-    "Authorization": "Bearer {}".format(os.getenv("LIVE_SECRET_KEY")),
-}
+HEADER = flutterwave.HEADER
 
 
 @router.get(
-    "/pay",
+    "/checkoutModal",
     summary="Creates payments link users use in processing payments.",
     description="The invoice ID should be passed as query parameter"
     "and then a checkout url is generated for user payment."
@@ -162,7 +160,7 @@ async def rave_checkout_callback(
 
 @router.get(
     "/paymentCallback",
-    summary="chcks the transaction status immediately after user payment",
+    summary="checks the transaction status immediately after user payment",
     description="This endpoint should be called by the frontend immediately"
     " after user completes payment process. The backend then verify's the"
     " the users payments if it was cancelled, completed or failed",
@@ -285,7 +283,7 @@ def build_payment_payload(
         "tx_ref": flw_txref,
         "amount": price,
         "customer": customer,
-        "redirect_url": "http://localhost:5000/raveCheckout/callback",
+        "redirect_url": "http://localhost:5000/flutterwave/callback",
         #"redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/callback",
         "customizations": {
             "title": "sammykingx-japaconsults",

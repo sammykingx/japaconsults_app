@@ -361,6 +361,7 @@ def invoice_serializer(record: db_models.Invoices):
     return {
         "inv_id": record.inv_id,
         "title": record.title,
+        "status": record.status,
         "desc": record.desc,
         "price": record.price,
         "to_email": record.to_email,

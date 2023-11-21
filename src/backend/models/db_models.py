@@ -226,5 +226,5 @@ class Payments(Base):
     payer_email = Column(String(30))
     paid_at = Column(DateTime)
     paid_amount = Column(Numeric(precision=15, scale=2))
-    checkout_type = Column(String(15))
+    checkout_type = Column(String(30))
     payment_type = Column(String(15))

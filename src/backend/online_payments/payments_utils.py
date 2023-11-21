@@ -250,7 +250,7 @@ def verv_api_call(refId, header):
             detail="payment processor took too long to respond",
         )
 
-   # print("inside verv api call\n", response)
+    print("inside verv api call\n", response, "\n")
 
     return response
 
@@ -303,13 +303,12 @@ def payment_serializer(
     record,
     active_user,
     checkout_type,
-    flw_ref=None
+    flw_txref=None
 ):
     """serializes the payment record"""
 
     data = {
         "ref_id": ref_id,
-        #"flw_txRef": resp["txRef"],
         "inv_id": record.inv_id,
         "title": record.title,
         "amount": float(record.price),
@@ -319,7 +318,7 @@ def payment_serializer(
         "status": "pending",
     }
 
-    if flw_ref:
-        data.update({"flw_ref": flw_ref})
+    if flw_txref:
+        data.update({"flw_txRef": flw_txref})
 
     return data

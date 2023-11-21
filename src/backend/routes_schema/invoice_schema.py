@@ -17,6 +17,7 @@ class InvoiceResponse(BaseModel):
     paid_at: datetime | None
     rave_txref: str | None
     ref_id: str | None
+    status: str | None
 
 
 class UpdateInvoice(BaseModel):

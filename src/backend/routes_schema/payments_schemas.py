@@ -35,4 +35,4 @@ class CancellTransactionResponse(BaseModel):
     status: str
     amount: float
     paid: bool
-    payment_type: str
+    checkout_type: str

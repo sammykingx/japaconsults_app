@@ -9,3 +9,7 @@ rave_pay = Rave(
     os.getenv("LIVE_SECRET_KEY"),
     production=True,
 )
+
+HEADER = {
+    "Authorization": "Bearer {}".format(os.getenv("LIVE_SECRET_KEY")),
+}
