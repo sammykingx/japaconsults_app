@@ -5,10 +5,10 @@ from models import db_engine, db_crud, db_models, redis_db
 from .flutterwave import rave_pay
 from rave_python import RaveExceptions
 from typing import Annotated
-import datetime, time
-import json
 from online_payments import payments_utils
+from dotenv import load_dotenv
 import online_payments.payment_schema as schemas
+import datetime, json, time, os
 
 
 redis = redis_db.redis_factory()
@@ -20,6 +20,11 @@ router = APIRouter(
         200: {"description": "Successfull request"},
     },
 )
+
+load_dotenv()
+HEADER = {
+    "Authorization": "Bearer {}".format(os.getenv("LIVE_SECRET_KEY")),
+}
 
 
 @router.get(
@@ -41,14 +46,15 @@ async def start_bank_transfer(
     record = payments_utils.validate_invoice(
                     db, active_user["email"], invoiceId
                 )
-    first_name, last_name = active_user["name"].split(" ")
+
+    ref_id = "REF-" + str(round(time.time()) * 2)
     data = {
-        "firstname": first_name,
-        "lastname": last_name,
+        "tx_ref": "MC-1585230950508",
         "email": active_user["email"],
         "amount": float(record.price),
-        #"currency": "NGN",
-        #"tx_ref": "MC-1585230950508",
+        "fullname": active_user["name"]
+        "currency": "NGN",
+        "narration": record.title,
     }
 
     try:
@@ -66,7 +72,6 @@ async def start_bank_transfer(
             detail=err.err["errMsg"],
         )
 
-    ref_id = "REF-" + str(round(time.time()) * 2)
     payment_record = payments_utils.payment_serializer(
                             ref_id,
                             res,
@@ -130,3 +135,29 @@ async def verify_bank_transfer(
         "msg": "Transfer successfull",
         "transactionComplete": res["transactionComplete"],
     }
+
+
+def get_virtual_account(user_data) -> dict:
+    """gets virtual account details"""
+
+    try:
+        response = req.post(
+            os.getenv("BANK_TRANSFER_ENDPOINT"),
+            headers=HEADER,
+            body=user_data,
+            timeout=5,
+        ).json()
+
+    except req.exceptions.ConnectionError:
+        raise HTTException(
+            status_code=status.HTTP_408_REQUEST_TIMEOUT,
+            detail="ERROR: check internet connection",
+        )
+
+    except req.exceptions.ReadTimeout:
+        raise HTTPException(
+            status_code=status.HTTP_504_GATEWAY_TIMEOUT,
+            detail="payment processor took too long to respond",
+        )
+
+    return response
