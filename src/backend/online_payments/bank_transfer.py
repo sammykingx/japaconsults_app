@@ -52,25 +52,12 @@ async def start_bank_transfer(
         "tx_ref": "MC-1585230950508",
         "email": active_user["email"],
         "amount": float(record.price),
-        "fullname": active_user["name"]
+        "fullname": active_user["name"],
         "currency": "NGN",
         "narration": record.title,
     }
 
-    try:
-        res = rave_pay.BankTransfer.charge(data)
-
-    except RaveExceptions.TransactionChargeError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=err.err["errMsg"],
-        )
-
-    except RaveExceptions.AccountChargeError as err:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=err.err["errMsg"],
-        )
+    response = get_virtual_account(data)
 
     payment_record = payments_utils.payment_serializer(
                             ref_id,
