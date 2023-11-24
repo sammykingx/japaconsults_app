@@ -12,7 +12,7 @@ class PendingPayments(BaseModel):
     status: str | None
     paid_by: str | None
     payer_email: EmailStr | str
-    payment_type: str
+    payment_type: str | None
 
 
 class PaymentResponse(PendingPayments, BaseModel):

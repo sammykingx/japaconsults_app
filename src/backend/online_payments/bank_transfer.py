@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 from sqlalchemy.orm import Session
 from auth import oauth2_users
 from models import db_engine, db_crud, db_models, redis_db

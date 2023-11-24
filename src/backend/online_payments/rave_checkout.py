@@ -283,8 +283,8 @@ def build_payment_payload(
         "tx_ref": flw_txref,
         "amount": price,
         "customer": customer,
-        "redirect_url": "http://localhost:5000/flutterwave/callback",
-        #"redirect_url": "https://japaconsults.sammykingx.tech/raveCheckout/callback",
+        #"redirect_url": "http://localhost:5000/flutterwave/callback",
+        "redirect_url": "https://visionary-platypus-2646e2.netlify.app/flutterwave/callback",
         "customizations": {
             "title": "sammykingx-japaconsults",
             "logo": "https://japaconsults.com/wp-content/"
