@@ -23,10 +23,9 @@ router = APIRouter(
         400: {
             "description": "Bad/Invalid request",
         },
-
         500: {
             "description": "Internal server error",
-        }
+        },
     },
 )
 
@@ -54,8 +53,8 @@ async def rave_checkout(
     """exchange invoice ID for payment url"""
 
     record = payments_utils.validate_invoice(
-                    db, active_user["email"], invoiceId
-                )
+        db, active_user["email"], invoiceId
+    )
 
     customer = {
         "name": active_user["name"],
@@ -71,8 +70,8 @@ async def rave_checkout(
     pay_link = response["data"]["link"]
 
     serialized_data = payments_utils.payment_serializer(
-                            ref_id, record, active_user, "rave_modal"
-                        )
+        ref_id, record, active_user, "rave_modal"
+    )
 
     db_crud.save(db, db_models.Payments, serialized_data)
     redis.set(ref_id, json.dumps(serialized_data))
@@ -103,11 +102,11 @@ async def rave_checkout_callback(
     query_params = str(req_url.query_params)
     params = dict(item.split("=") for item in query_params.split("&"))
 
-    #print(params)
+    # print(params)
 
     payment_record = payments_utils.get_payments_record(
-                            db, params.get("tx_ref")
-                        )
+        db, params.get("tx_ref")
+    )
 
     # status can be cancelled, failed, completed.
     if params.get("status") == "cancelled":
@@ -117,9 +116,9 @@ async def rave_checkout_callback(
 
         redis.delete(params.get("tx_ref"))
         return {
-                "status": params.get("status"),
-                "ref_id": params.get("tx_ref"),
-            }
+            "status": params.get("status"),
+            "ref_id": params.get("tx_ref"),
+        }
 
     elif params.get("status") == "failed":
         payments_utils.update_payment_status(
@@ -128,9 +127,9 @@ async def rave_checkout_callback(
 
         redis.delete(params.get("tx_ref"))
         return {
-                "status": params.get("status"),
-                "ref_id": params.get("tx_ref"),
-            }
+            "status": params.get("status"),
+            "ref_id": params.get("tx_ref"),
+        }
 
     # change transaction to checking awaiting call to verification endpoint
     payments_utils.change_to_checking(
@@ -139,20 +138,21 @@ async def rave_checkout_callback(
 
     # update redis key to add transaction_id
     payments_utils.add_transaction_id_to_redis_key(
-            params.get("tx_ref"), params.get("transaction_id")
-        )
+        params.get("tx_ref"), params.get("transaction_id")
+    )
 
     # add backg_round job to verify transaction
     bg_task.add_task(
         payments_utils.confirm_user_payments,
         params.get("tx_ref"),
-        HEADER
+        HEADER,
     )
 
     return {
-            "status": params.get("status"),
-            "ref_id": params.get("tx_ref"),
-        }
+        "status": params.get("status"),
+        "ref_id": params.get("tx_ref"),
+    }
+
 
 # demo reponse params
 # status=completed&tx_ref=REF-3400515214&transaction_id=1141230276
@@ -182,9 +182,7 @@ async def payment_callback(
 
     check_parameter_integrity(tx_ref, tx_status, transaction_id)
 
-    payment_record = payments_utils.get_payments_record(
-                            db, tx_ref
-                        )
+    payment_record = payments_utils.get_payments_record(db, tx_ref)
 
     if tx_status == "cancelled":
         payments_utils.update_payment_status(
@@ -193,9 +191,9 @@ async def payment_callback(
 
         redis.delete(tx_ref)
         return {
-                "status": tx_status,
-                "ref_id": tx_ref,
-            }
+            "status": tx_status,
+            "ref_id": tx_ref,
+        }
 
     elif tx_status == "failed":
         payments_utils.update_payment_status(
@@ -205,32 +203,30 @@ async def payment_callback(
         redis.delete(tx_ref)
 
     payments_utils.change_to_checking(
-            db, payment_record, transaction_id, "checking"
-        )
+        db, payment_record, transaction_id, "checking"
+    )
 
     payments_utils.add_transaction_id_to_redis_key(
-            tx_ref, transaction_id
-        )
+        tx_ref, transaction_id
+    )
 
     bg_task.add_task(
-        payments_utils.confirm_user_payments,
-        tx_ref,
-        HEADER
+        payments_utils.confirm_user_payments, tx_ref, HEADER
     )
 
     return {
-            "status": tx_status,
-            "ref_id": tx_ref,
-        }
+        "status": tx_status,
+        "ref_id": tx_ref,
+    }
 
 
 @router.get(
     "/verifyPayments",
     summary="Verify's if the users payment was successful",
     description="This endpoint verifies the users payment status "
-                "with payment processor before the record is updated."
-                "Should be called in situations where there's delay"
-                " from users bank in validating payments.",
+    "with payment processor before the record is updated."
+    "Should be called in situations where there's delay"
+    " from users bank in validating payments.",
     response_model=payment_schema.RaveVerifyPayments,
 )
 async def verify_user_payments(refId: str) -> dict:
@@ -238,9 +234,9 @@ async def verify_user_payments(refId: str) -> dict:
 
     if not redis.exists(refId):
         return {
-                "status": "completed",
-                "msg": "payment verification complete",
-            }
+            "status": "completed",
+            "msg": "payment verification complete",
+        }
 
     response = payments_utils.confirm_user_payments(refId, HEADER)
     redis.delete(refId)
@@ -256,7 +252,7 @@ def get_rave_link(user_payload) -> dict:
             os.getenv("CHECKOUT_ENDPOINT"),
             headers=HEADER,
             json=user_payload,
-            timeout=5,
+            timeout=8,
         ).json()
 
     except req.exceptions.ConnectionError:
@@ -283,7 +279,7 @@ def build_payment_payload(
         "tx_ref": flw_txref,
         "amount": price,
         "customer": customer,
-        #"redirect_url": "http://localhost:5000/flutterwave/callback",
+        # "redirect_url": "http://localhost:5000/flutterwave/callback",
         "redirect_url": "https://visionary-platypus-2646e2.netlify.app/flutterwave/callback",
         "customizations": {
             "title": "sammykingx-japaconsults",
@@ -299,20 +295,20 @@ def check_parameter_integrity(tx_ref, tx_status, transaction_id):
     """checks integrity of query params"""
 
     if not redis.exists(tx_ref):
-         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invalid tx_ref value, check and try again",
-            )
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid tx_ref value, check and try again",
+        )
 
     if tx_status not in ("cancelled", "completed", "failed"):
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Unrecognized transaction status => '{tx_status}'",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unrecognized transaction status => '{tx_status}'",
+        )
 
     if tx_status == "completed" and transaction_id == None:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"transaction id can't be empty when tx_status is "
-                        "completed",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"transaction id can't be empty when tx_status is "
+            "completed",
+        )

@@ -23,6 +23,7 @@ router = APIRouter(
     },
 )
 
+
 @router.get(
     "/all",
     summary="Returns all created invoices",
@@ -104,6 +105,41 @@ async def get_pending_invoices(
             db_models.Invoices,
             db_models.Invoices.created_at,
             paid=False,
+        )
+
+    is_empty(records)
+
+    data = [invoice_serializer(record) for record in records]
+    return data
+
+
+@router.get(
+    "/expired",
+    summary="Returns all expiredd invoices",
+    description="This endpoint can be used by all users, no restrictions",
+    response_model=list[invoice_schema.InvoiceResponse],
+)
+async def get_pending_invoices(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """returns all expired invoices"""
+
+    if active_user["role"] == "user":
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            status="expired",
+            to_email=active_user["email"],
+        )
+
+    else:
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Invoices,
+            db_models.Invoices.created_at,
+            status="expired",
         )
 
     is_empty(records)
@@ -227,9 +263,9 @@ async def update_invoice(
     # update db record
     if record.paid:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Can't Update an already paid invoice",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't Update an already paid invoice",
+        )
 
     record.title = payload.title
     record.desc = payload.desc
@@ -282,12 +318,14 @@ async def manual_invoice_status_update(
     payment_timestamp = datetime.utcnow()
 
     payments_utils.update_payments_to_paid(
-            payment_record, payment_timestamp
-        )
+        payment_record, payment_timestamp
+    )
 
     payments_utils.update_invoice_to_paid(
-            invoice_record, payment_record, payment_timestamp,
-        )
+        invoice_record,
+        payment_record,
+        payment_timestamp,
+    )
 
     db.commit()
 
@@ -326,12 +364,15 @@ def check_payload(payload: schema.CreateInvoice) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="number of characters in 'title' greater than 50",
         )
+
     if len(payload.desc) > 250:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="number of characters is greater than 100",
         )
+
     price = str(payload.price)
+
     if len(price.split(".")[1]) > 2:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

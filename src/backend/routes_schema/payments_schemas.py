@@ -6,21 +6,21 @@ class PendingPayments(BaseModel):
     ref_id: str
     rave_txRef: str | None
     invoice_id: str
-    title:  str | None
+    title: str | None
     amount: float
     paid: bool = False
     status: str | None
     paid_by: str | None
     payer_email: EmailStr | str
-    payment_type: str | None
+    checkout_type: str | None
 
 
 class PaymentResponse(PendingPayments, BaseModel):
-    #paid_by: str | None
-    #amount: float
+    # paid_by: str | None
+    # amount: float
     paid_at: datetime | None
     paid_amount: float | None
-    #payment_type: str
+    payment_type: str | None
 
 
 class UserTotalSpend(BaseModel):

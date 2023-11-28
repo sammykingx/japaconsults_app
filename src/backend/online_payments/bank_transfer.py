@@ -15,6 +15,7 @@ redis = redis_db.redis_factory()
 
 load_dotenv()
 
+
 @router.get(
     "/bankTransfer",
     summary="Initiates bank transfer payment method",
@@ -31,8 +32,8 @@ async def start_bank_transfer(
     """initiate bank transfer"""
 
     record = payments_utils.validate_invoice(
-                    db, active_user["email"], invoiceId
-                )
+        db, active_user["email"], invoiceId
+    )
 
     ref_id = "REF-" + str(round(time.time()) * 2)
     data = {
@@ -46,16 +47,16 @@ async def start_bank_transfer(
     resp = get_virtual_account(data)
     data.update(resp["meta"]["authorization"])
 
-    print("\nref_id => ",ref_id)
+    print("\nref_id => ", ref_id)
     print("\nrave_resp =>", resp)
 
     payment_record = payments_utils.payment_serializer(
-                            ref_id,
-                            record,
-                            active_user,
-                           "direct bank transfer",
-                            resp["meta"]["authorization"]["transfer_reference"],
-                    )
+        ref_id,
+        record,
+        active_user,
+        "direct bank transfer",
+        resp["meta"]["authorization"]["transfer_reference"],
+    )
 
     db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(data))
@@ -63,9 +64,15 @@ async def start_bank_transfer(
         "ref_id": ref_id,
         "message": resp["message"],
         "bank_name": resp["meta"]["authorization"]["transfer_bank"],
-        "bank_account": resp["meta"]["authorization"]["transfer_account"],
-        "transfer_amount": resp["meta"]["authorization"]["transfer_amount"],
-        "expires_in": resp["meta"]["authorization"]["account_expiration"],
+        "bank_account": resp["meta"]["authorization"][
+            "transfer_account"
+        ],
+        "transfer_amount": resp["meta"]["authorization"][
+            "transfer_amount"
+        ],
+        "expires_in": resp["meta"]["authorization"][
+            "account_expiration"
+        ],
     }
 
     return temp_bank_acc

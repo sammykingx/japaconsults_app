@@ -1,8 +1,8 @@
-summary="""
+summary = """
 A business toolkit that simplifies business workflow, elevates collaboration, and supercharges communication. Share files, manage payments, and keep everyone in the loop seamlessly
 """
 
-description="""
+description = """
 ## Introduction
 
 JAPA_APP is a comprehensive application designed to streamline japaconsults business operations by combining file sharing, payment processing, and messaging into a single, integrated platform. This versatile solution enhance collaboration, financial transactions, and communication between staff and clients in one seamless environment.

@@ -9,6 +9,7 @@ import datetime, json, requests, os
 
 redis = redis_db.redis_factory()
 
+
 def validate_invoice(db, email, invoiceId):
     """validates invoice record"""
 
@@ -16,7 +17,7 @@ def validate_invoice(db, email, invoiceId):
     is_empty(invoice_record)
     is_paid(invoice_record)
     check_assignee(email, invoice_record)
-    is_expired(invoice_record)
+    is_expired(db, invoice_record)
     has_active_payment(db, invoiceId)
     return invoice_record
 
@@ -32,11 +33,14 @@ def has_active_payment(db, invoiceId):
         return False
 
     for record in payment_records:
-        if record.status in ("checking", "pending"):
+        if record.status == "pending":
+            update_payment_status(db, record, "cancelled")
+
+        elif record.status == "checking":
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"{record.ref_id} still active, kindly complete "
-                       "transaction",
+                detail="we're still verifying transaction with refId "
+                f"{record.ref_id}",
             )
 
 
@@ -45,9 +49,9 @@ def is_paid(record):
 
     if record.paid:
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Invoice is already paid",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invoice is already paid",
+        )
 
 
 def check_assignee(email, record):
@@ -60,10 +64,11 @@ def check_assignee(email, record):
         )
 
 
-def is_expired(db_record):
+def is_expired(db, db_record):
     """checks if the invoice has expired"""
 
     if datetime.date.today() > db_record.due_date:
+        update_invoice_status(db, db_record, "expired")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invoice has expired, can't process payment",
@@ -93,8 +98,8 @@ def get_invoice(db, invoiceId):
 def get_payments_record(db, refId):
     """gets the payment record
 
-        db: the request db session
-        refId: the payment reference id
+    db: the request db session
+    refId: the payment reference id
     """
 
     record = db_crud.get_specific_record(
@@ -105,10 +110,7 @@ def get_payments_record(db, refId):
 
 
 def update_invoice_record(
-    invoice_record,
-    payment_record,
-    payment_timestamp,
-    tx_status
+    invoice_record, payment_record, payment_timestamp, tx_status
 ):
     """updates invoices record"""
 
@@ -125,7 +127,7 @@ def update_payments_record(
     payment_type,
     amount,
     tx_status,
-    flw_ref=None
+    flw_ref=None,
 ):
     """updates the payment record to paid"""
 
@@ -136,16 +138,11 @@ def update_payments_record(
     payment_record.paid_at = payment_timestamp
     payment_record.paid_amount = amount
     payment_record.status = tx_status
-    payment_record.payment_type  = payment_type
+    payment_record.payment_type = payment_type
 
 
 def complete_transaction(
-    db,
-    refId,
-    payment_type,
-    amount,
-    tx_status,
-    flw_ref
+    db, refId, payment_type, amount, tx_status, flw_ref
 ):
     """updates the payments and invoice table upon successfull payments"""
 
@@ -157,20 +154,17 @@ def complete_transaction(
 
     # update records
     update_payments_record(
-            payment_record,
-            payment_timestamp,
-            payment_type,
-            amount,
-            tx_status,
-            flw_ref,
-        )
+        payment_record,
+        payment_timestamp,
+        payment_type,
+        amount,
+        tx_status,
+        flw_ref,
+    )
 
     update_invoice_record(
-            invoice_record,
-            payment_record,
-            payment_timestamp,
-            tx_status
-        )
+        invoice_record, payment_record, payment_timestamp, tx_status
+    )
 
     db.commit()
 
@@ -183,7 +177,7 @@ def complete_transaction(
 def change_to_checking(db, payment_record, transaction_id, tx_status):
     """changes the payment transaction status to checking"""
 
-#    payment_record = get_payments_record(db, refId)
+    #    payment_record = get_payments_record(db, refId)
     payment_record.flw_txRef = transaction_id
     payment_record.status = tx_status
 
@@ -196,11 +190,20 @@ def change_to_checking(db, payment_record, transaction_id, tx_status):
 def update_payment_status(db, payment_record, tx_status):
     """updates the payment status"""
 
-#    payment_record = get_payments_record(db, refId)
+    #    payment_record = get_payments_record(db, refId)
     payment_record.status = tx_status
 
     db.commit()
     db.refresh(payment_record)
+
+
+def update_invoice_status(db, invoice_record, tx_status):
+    """updates the invoice status"""
+
+    invoice_record.status = tx_status
+
+    db.commit()
+    db.refresh(invoice_record)
 
 
 def add_transaction_id_to_redis_key(refId, transaction_id):
@@ -228,15 +231,15 @@ def is_amount_complete(record, data):
 def verv_api_call(refId, header):
     """makes the verification call using our refId to verify user payments"""
 
-    param = {"tx_ref" : refId}
+    param = {"tx_ref": refId}
     load_dotenv()
     try:
         response = requests.get(
-                        os.getenv("VERIFY_BY_REF"),
-                        headers=header,
-                        params=param,
-                        timeout=5,
-                    ).json()
+            os.getenv("VERIFY_BY_REF"),
+            headers=header,
+            params=param,
+            timeout=5,
+        ).json()
 
     except requests.exceptions.ConnectionError:
         raise HTTException(
@@ -264,46 +267,38 @@ def confirm_user_payments(refId, header):
 
     resp = verv_api_call(refId, header)
     if resp["status"] != "success":
-        update_payment_status(
-            db_session,
-            payment_record,
-            resp["status"]
-        )
+        update_payment_status(db_session, payment_record, resp["status"])
 
         return {
-                "status": resp["status"],
-                "msg": "check back later",
-            }
+            "status": resp["status"],
+            "msg": "check back later",
+        }
 
     if is_amount_complete(payment_record, resp["data"]):
         tx_status = "paid"
 
     else:
         tx_status = "incomplete"
-    
+
     complete_transaction(
-            db_session,
-            refId,
-            resp["data"]["payment_type"],
-            resp["data"]["charged_amount"],
-            tx_status,
-            resp["data"]["flw_ref"],
-        )
+        db_session,
+        refId,
+        resp["data"]["payment_type"],
+        resp["data"]["charged_amount"],
+        tx_status,
+        resp["data"]["flw_ref"],
+    )
 
     redis.delete(refId)
 
     return {
-            "status": resp["status"],
-            "msg": "payment verified",
-        }
+        "status": resp["status"],
+        "msg": "payment verified",
+    }
 
 
 def payment_serializer(
-    ref_id,
-    record,
-    active_user,
-    checkout_type,
-    flw_txref=None
+    ref_id, record, active_user, checkout_type, flw_txref=None
 ):
     """serializes the payment record"""
 

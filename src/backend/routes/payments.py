@@ -79,7 +79,7 @@ async def pending_payments(
             db,
             db_models.Payments,
             db_models.Payments.ref_id,
-            #paid=False,
+            # paid=False,
             status="pending",
             payer_email=active_user["email"],
         )
@@ -135,7 +135,7 @@ async def all_cancelled_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
-    """return all paid payments"""
+    """return all cancelled payments"""
 
     if active_user["role"] == "user":
         records = db_crud.filter_record_in_lifo(
@@ -148,11 +148,79 @@ async def all_cancelled_payments(
 
     else:
         records = db_crud.filter_record_in_lifo(
-                db,
-                db_models.Payments,
-                db_models.Payments.ref_id,
-                status="cancelled",
-            )
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="cancelled",
+        )
+
+    check_record(records)
+    return [payments_serializer(record) for record in records]
+
+
+@router.get(
+    "/failedPayments",
+    summary="To see all failed payments on the system",
+    description="Use this endpoints to see all failled payments on the "
+    "system, can be used by all user roles.",
+    response_model=list[payments_schemas.PendingPayments],
+)
+async def all_failed_payments(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """return all failed payments"""
+
+    if active_user["role"] == "user":
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="failed",
+            payer_email=active_user["email"],
+        )
+
+    else:
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="failed",
+        )
+
+    check_record(records)
+    return [payments_serializer(record) for record in records]
+
+
+@router.get(
+    "/paymentsError",
+    summary="To see all payments with status 'error' on the system",
+    description="Use this endpoints to see all payments with status "
+    "'error' on the system, can be used by all user roles.",
+    response_model=list[payments_schemas.PendingPayments],
+)
+async def all_payments_errorss(
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """return all payments error on the system"""
+
+    if active_user["role"] == "user":
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="error",
+            payer_email=active_user["email"],
+        )
+
+    else:
+        records = db_crud.filter_record_in_lifo(
+            db,
+            db_models.Payments,
+            db_models.Payments.ref_id,
+            status="error",
+        )
 
     check_record(records)
     return [payments_serializer(record) for record in records]
@@ -173,12 +241,18 @@ async def cancell_transaction(
 
     if not redis.exists(refId):
         raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="transaction with 'ref_id' already completed or "
-                       "terminated/cancelled.",
-            )
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="transaction with 'ref_id' already completed or "
+            "terminated/cancelled.",
+        )
 
     payment_record = payments_utils.get_payments_record(db, refId)
+    if payment_record.status != "pending":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="can only cancell transaction when status is pending",
+        )
+
     payments_utils.update_payment_status(db, payment_record, "cancelled")
     redis.delete(refId)
     return payment_record
@@ -188,6 +262,7 @@ async def cancell_transaction(
     "/{refId}",
     summary="see transaction details by reference id",
     description="Returns full details of any transaction by its's ref id",
+    response_model=payments_schemas.PaymentResponse,
 )
 async def payment_details_by_ref(
     refId: str,
@@ -197,11 +272,10 @@ async def payment_details_by_ref(
     """gets the transaction details"""
 
     record = db_crud.get_specific_record(
-                    db, db_models.Payments, ref_id=refId
-                )
+        db, db_models.Payments, ref_id=refId
+    )
 
     check_record(record)
-    # make a network call to verify payment
 
     return record
 
@@ -321,7 +395,6 @@ def payments_serializer(record):
         "rave_txRef": record.flw_txRef,
         "invoice_id": record.inv_id,
         "title": record.title,
-        "rave_txref": record.flw_txRef,
         "paid_by": record.paid_by,
         "amount": record.amount,
         "paid": record.paid,
@@ -330,6 +403,7 @@ def payments_serializer(record):
         "paid_amount": record.paid_amount,
         "payer_email": record.payer_email,
         "payment_type": record.payment_type,
+        "checkout_type": record.checkout_type,
     }
 
 

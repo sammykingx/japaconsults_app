@@ -18,7 +18,7 @@ router = APIRouter(
     prefix="/card",
     tags=["card Paymemnts"],
     responses={
-    #    200: {"description": "Successfule Request"},
+        #    200: {"description": "Successfule Request"},
         400: {"description": "Missing required/Invalid data in request"},
     },
 )
@@ -41,8 +41,8 @@ async def card_payments(
 
     # gets and perform checks on the invoice ID
     record = payments_utils.validate_invoice(
-                    db, active_user["email"], invoiceId
-            )
+        db, active_user["email"], invoiceId
+    )
 
     card_details = payload.model_dump().copy()
     f_name, l_name = active_user["name"].split(" ")
@@ -74,12 +74,8 @@ async def card_payments(
 
     ref_id = "REF-" + str(round(time.time()) * 2)
     payment_record = payments_utils.payment_serializer(
-                            ref_id,
-                            res,
-                            record,
-                            active_user,
-                            "card"
-                    )
+        ref_id, res, record, active_user, "card"
+    )
 
     db_crud.save(db, db_models.Payments, payment_record)
     redis.set(ref_id, json.dumps(res))
@@ -138,9 +134,11 @@ async def verify_card_payments(
         )
 
     # get successfull payment timestamp
-    #payment_timestamp = datetime.datetime.utcnow()
+    # payment_timestamp = datetime.datetime.utcnow()
 
-    invoice_record = payments_utils.successfull_transaction(db, payload.ref_id)
+    invoice_record = payments_utils.successfull_transaction(
+        db, payload.ref_id
+    )
 
     # delete key from redis
     redis.delete(payload.ref_id)
