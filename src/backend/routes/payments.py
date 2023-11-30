@@ -37,7 +37,7 @@ redis = redis_db.redis_factory()
     "internally based on the role type of the active user",
     response_model=list[payments_schemas.PaymentResponse],
 )
-async def app_payments(
+async def all_payments(
     active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
     db: Annotated[Session, Depends(db_engine.get_db)],
 ):
@@ -259,28 +259,6 @@ async def cancell_transaction(
 
 
 @router.get(
-    "/{refId}",
-    summary="see transaction details by reference id",
-    description="Returns full details of any transaction by its's ref id",
-    response_model=payments_schemas.PaymentResponse,
-)
-async def payment_details_by_ref(
-    refId: str,
-    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
-    db: Annotated[Session, Depends(db_engine.get_db)],
-):
-    """gets the transaction details"""
-
-    record = db_crud.get_specific_record(
-        db, db_models.Payments, ref_id=refId
-    )
-
-    check_record(record)
-
-    return record
-
-
-@router.get(
     "/totalRevenue",
     summary="Returns the total revenue on the system",
     description="Returns the total revenue generated based on month"
@@ -375,6 +353,28 @@ async def user_total_spend(
         "email": active_user["email"],
         "total_spend": spent_amount,
     }
+
+
+@router.get(
+    "/{refId}",
+    summary="see transaction details by reference id",
+    description="Returns full details of any transaction by its's ref id",
+    response_model=payments_schemas.PaymentResponse,
+)
+async def payment_details_by_ref(
+    refId: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """gets the transaction details"""
+
+    record = db_crud.get_specific_record(
+        db, db_models.Payments, ref_id=refId
+    )
+
+    check_record(record)
+
+    return payments_serializer(record)
 
 
 def check_record(records):

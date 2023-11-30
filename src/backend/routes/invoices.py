@@ -57,27 +57,6 @@ async def get_all_invoice(
     return data
 
 
-# @router.get(
-#    "/{invoiceId}",
-#    summary="Returns a specific invoice by its id",
-#    description="This endpoint can be used by all users",
-#    response_model=InvoiceResponse,
-# )
-# async def get_invoice_by_id(
-#    invoiceId: str,
-#    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
-#    db: Annotated[Session, Depends(db_engine.get_db)],
-# ):
-#    """gets an invoice by its id"""
-#
-#    record = db_crud.get_specific_record(
-#        db, db_models.Invoices, inv_id=invoiceId
-#    )
-#   is_empty(record)
-#    data = invoice_serializer(record)
-#    return data
-
-
 @router.get(
     "/pending",
     summary="Returns all unpaid invoices",
@@ -96,6 +75,7 @@ async def get_pending_invoices(
             db_models.Invoices,
             db_models.Invoices.created_at,
             paid=False,
+            status=None,
             to_email=active_user["email"],
         )
 
@@ -105,6 +85,7 @@ async def get_pending_invoices(
             db_models.Invoices,
             db_models.Invoices.created_at,
             paid=False,
+            status=None,
         )
 
     is_empty(records)
@@ -185,6 +166,28 @@ async def get_paid_invoice(
     return data
 
 
+@router.get(
+    "/{invoiceId}",
+    summary="Returns a specific invoice by its id",
+    description="This endpoint can be used by all users",
+    response_model=invoice_schema.InvoiceResponse,
+)
+async def get_invoice_by_id(
+    invoiceId: str,
+    active_user: Annotated[dict, Depends(oauth2_users.verify_token)],
+    db: Annotated[Session, Depends(db_engine.get_db)],
+):
+    """gets an invoice by its id"""
+
+    record = db_crud.get_specific_record(
+        db, db_models.Invoices, inv_id=invoiceId
+    )
+
+    is_empty(record)
+    data = invoice_serializer(record)
+    return data
+
+
 @router.post(
     "/create",
     summary="Creates invoice",
@@ -224,7 +227,7 @@ async def create_invoice(
             "inv_id": "JPC-" + str(round(time.time())),
             "created_at": datetime.utcnow(),
             "created_by": active_user["name"],
-            # invoice type
+            "status": "pending",
         }
     )
     db_crud.save(db, db_models.Invoices, data)
