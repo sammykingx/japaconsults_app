@@ -320,20 +320,18 @@ async def manual_invoice_status_update(
 
     payment_timestamp = datetime.utcnow()
 
-    payments_utils.update_payments_to_paid(
-        payment_record, payment_timestamp
-    )
+    # payments_utils.update_payments_to_paid(
+    #    payment_record, payment_timestamp
+    # )
 
-    payments_utils.update_invoice_to_paid(
+    payments_utils.update_invoice_status(
+        db,    
         invoice_record,
-        payment_record,
-        payment_timestamp,
+        "paid",
     )
 
-    db.commit()
-
-    db.refresh(invoice_record)
-    db.refresh(payment_record)
+    # db.refresh(invoice_record)
+    # db.refresh(payment_record)
 
     return {"msg": "Invoice status updated manaually"}
 

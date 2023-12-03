@@ -404,7 +404,7 @@ async def change_user_role(
     db.refresh(record)
     user_data = {
         "user_id": record.user_id,
-        "name": record.name,
+        "name": f"{record.first_name} {record.last_name}",
         "email": record.email,
         "role": payload.role,
     }
