@@ -342,14 +342,14 @@ async def register_user(
             detail="User account exists",
         )
 
-    status = "Unverified"
+    acc_status = "Unverified"
     temp_data = payload.model_dump().copy()
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
     temp_data.update(date_joined=datetime.datetime.utcnow())
 
     if temp_data["role"] == "admin":
         temp_data.update(is_verified=True)
-        status = "verified"
+        acc_status = "verified"
 
     db_crud.save(db, db_models.User, temp_data)
 
@@ -371,7 +371,7 @@ async def register_user(
 
     return {
         "msg": "user account created succefully",
-        "status": status,
+        "status": acc_status,
     }
 
 
