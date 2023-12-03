@@ -42,7 +42,7 @@ templates = Jinja2Templates(directory="templates")
 
 
 def serialize_user(user: db_models.User) -> dict:
-    """builds the user_json object"""
+    """builds the user json object"""
 
     data = {
         "user_id": user.user_id,
@@ -55,6 +55,7 @@ def serialize_user(user: db_models.User) -> dict:
         "date_joined": user.date_joined,
         "last_login": user.last_login,
     }
+
     return data
 
 
@@ -72,11 +73,13 @@ def check_user_payload(payload):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="email length too long",
         )
+
     if payload.role not in USER_ROLES:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="invalid user role",
         )
+
     if not verify_number.verify_phone_num(payload.phone_num):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -153,6 +156,7 @@ async def all_users(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No user with role 'user' found",
         )
+
     return [serialize_user(record) for record in records]
 
 
@@ -181,6 +185,7 @@ async def all_staffs(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No staff found on the system",
         )
+
     return [serialize_user(record) for record in records]
 
 
@@ -209,6 +214,7 @@ async def all_managers(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No managers found",
         )
+
     return [serialize_user(record) for record in records]
 
 
@@ -236,6 +242,7 @@ async def all_admins(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No admin found",
         )
+
     return [serialize_user(record) for record in records]
 
 
@@ -264,6 +271,7 @@ async def user_profile(
     record = db_crud.get_specific_record(
         db, db_models.User, user_id=token["sub"]
     )
+
     profile = serialize_user(record)
     return profile
 
@@ -287,9 +295,11 @@ async def user_details_by_id(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Unauthorized access to resource",
         )
+
     record = db_crud.get_specific_record(
         db, db_models.User, user_id=userId
     )
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -325,16 +335,24 @@ async def register_user(
     resp = db_crud.get_specific_record(
         db, db_models.User, email=payload.email
     )
+
     if resp:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="User account exists",
         )
 
+    status = "Unverified"
     temp_data = payload.model_dump().copy()
     temp_data["password"] = password_hash.hash_pwd(temp_data["password"])
     temp_data.update(date_joined=datetime.datetime.utcnow())
+
+    if temp_data["role"] == "admin":
+        temp_data.update(is_verified=True)
+        status = "verified"
+
     db_crud.save(db, db_models.User, temp_data)
+
     # email_token = oauth2_users.email_verification_token(payload.email)
     # message = templates.TemplateResponse(
     #        "email_verification.html",
@@ -353,7 +371,7 @@ async def register_user(
 
     return {
         "msg": "user account created succefully",
-        "status": "Unverified",
+        "status": status,
     }
 
 
@@ -372,26 +390,37 @@ async def change_user_role(
     provided on the payload
     """
 
+    update_role_check(user, payload)
+    
     # checks active user role
-    if user["role"] not in ("admin", "manager"):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Unauthorized access to resource",
-        )
+    #if user["role"] not in ("admin", "manager"):
+    #    raise HTTPException(
+    #        status_code=status.HTTP_401_UNAUTHORIZED,
+    #        detail="Unauthorized access to resource",
+    #    )
 
     # checks the request payload role
-    if payload.role not in USER_ROLES:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid user role selected",
-        )
+    #if payload.role not in USER_ROLES:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_400_BAD_REQUEST,
+    #        detail="Invalid user role selected",
+    #    )
+
+    #if user["email"] == payload.user_email:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_400_BAD_REQUEST,
+    #        detail="can't update your own role",
+    #    )
+
     record = db_crud.get_specific_record(
         db, db_models.User, email=payload.user_email
     )
+
     if not record:
         raise HTTPexception(
             status_code=status.HTTP_404_NOT_FOUND, detail="No user found"
         )
+
     if record.role == "manager":
         if payload.role in ("user", "staff") and user["role"] != "admin":
             raise HTTPException(
@@ -400,14 +429,17 @@ async def change_user_role(
             )
 
     record.role = payload.role
+
     db.commit()
     db.refresh(record)
+
     user_data = {
         "user_id": record.user_id,
         "name": f"{record.first_name} {record.last_name}",
         "email": record.email,
         "role": payload.role,
     }
+
     return {"msg": "role updated", "data": user_data}
 
 
@@ -431,27 +463,33 @@ async def user_profile_pic(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=f"File type 'file.content_type' not supported",
         )
+
     data = await file.read()
     if len(data) > file_size:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="File size too large",
         )
+
     resp = cloud.upload_file(
         "1D8rZ7oNDzwBlrOTEiqyrLDRpfb0unzhQ",
         file.filename,
         data,
         file.content_type,
     )
+
     record = db_crud.get_specific_record(
         db, db_models.User, user_id=user["sub"]
     )
+
     record.profile_pic = resp["webViewLink"].removesuffix(
         "?usp=drivesdk"
     )
+
     try:
         db.commit()
         db.refresh(record)
+
     except Exception as err:
         print(err)
         raise HTTPException(
@@ -461,3 +499,28 @@ async def user_profile_pic(
         )
 
     return {"msg": "upload succesfull"}
+
+
+def update_role_check(user, payload):
+    """checks active user and payload before updating role"""
+
+     # checks active user role
+    if user["role"] not in ("admin", "manager"):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Unauthorized access to resource",
+        )
+
+    # checks the request payload role
+    if payload.role not in USER_ROLES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid user role selected",
+        )
+
+    if user["email"] == payload.user_email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="can't update your own role",
+        )
+
