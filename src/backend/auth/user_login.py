@@ -11,7 +11,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from models import db_crud, db_engine, db_models, redis_db, schema
 from utils import email_notification, password_hash, redis_user_token
-from auth import oauth2_users
+from auth import oauth2_users, auth_schema
 from typing import Annotated
 from dotenv import load_dotenv
 from pydantic import BaseModel, EmailStr
@@ -21,7 +21,6 @@ from docs.auth import (
     password_change,
     logout,
 )
-from . import auth_schema
 import datetime, jwt, pathlib, os
 
 
@@ -200,12 +199,6 @@ async def verify_user_email(
         db, db_models.User, email=encoded_data["email"]
     )
 
-    # if user.is_verified:
-    #    raise HTTPException(
-    #        status_code=status.HTTP_409_CONFLICT,
-    #        detail="User already Verified",
-    #    )
-
     user.is_verified = True
 
     try:
@@ -227,11 +220,6 @@ async def verify_user_email(
         "email": user.email,
         "is_verified": user.is_verified,
     }
-
-
-# class ChangePassword(BaseModel):
-#    token: str
-#    new_pwd: str
 
 
 @router.patch(

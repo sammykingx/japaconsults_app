@@ -12,13 +12,10 @@ import jwt, os
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth")
 redis = redis_db.redis_factory()
 
-# change the details to invalid token
 TOKEN_EXCEPTION = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,
     detail="token verification error",
 )
-
-REVOKED_TOKENS = []
 
 load_dotenv()
 
@@ -41,6 +38,7 @@ def is_user_verified(mail: EmailStr):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not verified",
         )
+
     return True
 
 
@@ -129,5 +127,4 @@ def revoke_token(token: str = Depends(oauth2_scheme)) -> None:
             detail="Invalid access Token",
         )
 
-    # REVOKED_TOKENS.append(token)
     redis.rpush("revoked_tokens", token)

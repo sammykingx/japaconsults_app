@@ -12,8 +12,6 @@ from models import db_engine, db_models, db_crud
 from utils import google_drive as cloud
 from typing import Annotated, List
 from pydantic import BaseModel
-
-# from enum import Enum
 from docs.routes import documents
 import datetime
 
@@ -52,15 +50,6 @@ router = APIRouter(
         500: {"description": "Internal Server Error"},
     },
 )
-
-
-# class Folder(Enum):
-#    academics = "academics"
-#    billing = "billing"
-#    contracts = "contracts"
-#    general = "general"
-#    visa = "visa"
-
 
 # temp
 class UploadDocuments(BaseModel):
@@ -103,6 +92,7 @@ def get_user_files(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Invalid folder specified",
             )
+
         records = db_crud.get_by(
             db, table, owner_id=user, folder=folderName
         )
@@ -111,10 +101,7 @@ def get_user_files(
         records = db_crud.get_by(db, table, owner_id=user)
 
     if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No files found for user",
-        )
+        return []
 
     return [file_serializer(record) for record in records]
 
@@ -221,6 +208,7 @@ async def my_files(
     user_files = get_user_files(
         db, db_models.Files, token["sub"], folderName
     )
+
     return user_files
 
 
@@ -228,7 +216,7 @@ async def my_files(
     "/userfiles",
     summary="gets all the files for a specific user",
     description="should be used by admin or managers only",
-    #    response_model=list[MyFiles],
+    response_model=list[MyFiles],
 )
 async def files_for(
     user_id: int,
@@ -261,7 +249,7 @@ async def user_recent_files(
     db: Annotated[Session, Depends(db_engine.get_db)],
     folderName: str | None = None,
 ):
-    """see recentt files"""
+    """see recent files"""
 
     if folderName:
         if folderName not in FOLDERS:
@@ -269,6 +257,7 @@ async def user_recent_files(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Invalid destination folder",
             )
+
         records = db_crud.record_in_lifo(
             db,
             db_models.Files,
@@ -276,6 +265,7 @@ async def user_recent_files(
             owner_id=token["sub"],
             folder=folderName,
         )
+
     else:
         records = db_crud.record_in_lifo(
             db,
@@ -283,11 +273,12 @@ async def user_recent_files(
             db_models.Files.date_uploaded,
             owner_id=token["sub"],
         )
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="No files found for user",
-        )
+
+    #if not records:
+    #    raise HTTPException(
+    #        status_code=status.HTTP_404_NOT_FOUND,
+    #        detail="No files found for user",
+    #    )
 
     return [file_serializer(record) for record in records if record.size]
 
@@ -326,6 +317,7 @@ async def all_files(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="no files uploaded",
         )
+
     # loop
     user_folders = (
         "academics",
@@ -334,6 +326,7 @@ async def all_files(
         "general",
         "visa",
     )
+
     all_files = {}
     for folder in user_folders:
         all_files.update(
@@ -372,6 +365,7 @@ async def remove_file(
     record = db_crud.get_specific_record(
         db, db_models.Files, file_id=fileId
     )
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -416,6 +410,7 @@ async def remove_user_files(
     record = db_crud.get_specific_record(
         db, db_models.Files, file_id=fileId
     )
+
     if not record:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
