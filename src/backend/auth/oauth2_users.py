@@ -50,11 +50,13 @@ def email_verification_token(email: EmailStr) -> str:
     user_data = {
         "email": email,
         "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(minutes=30),
+        "exp": datetime.utcnow() + timedelta(minutes=60),
     }
+
     token = jwt.encode(
         user_data, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
     )
+
     return token
 
 
@@ -70,6 +72,7 @@ def token_payload(user) -> dict:
         "is_verified": user.is_verified,
         # "date_joined": user.date_joined,
     }
+
     return payload
 
 
@@ -79,7 +82,7 @@ def create_token(user) -> str:
     data = token_payload(user)
     dup_data = data.copy()
     iat = datetime.utcnow()
-    exp = datetime.utcnow() + timedelta(minutes=30)
+    exp = datetime.utcnow() + timedelta(minutes=60)
     dup_data.update({"iat": iat, "exp": exp})
 
     token = jwt.encode(
@@ -97,6 +100,7 @@ def verify_token(token: Annotated[str, Depends(oauth2_scheme)]) -> dict:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid access token",
         )
+
     try:
         data = jwt.decode(
             token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")

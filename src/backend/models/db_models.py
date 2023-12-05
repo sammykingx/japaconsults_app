@@ -7,7 +7,6 @@ from sqlalchemy import (
     Text,
     DateTime,
     TIMESTAMP,
-    JSON,
     ForeignKey,
     Date,
     Numeric,
@@ -36,7 +35,7 @@ class User(Base):
     last_login = Column(DateTime)
 
     def __repr_(self):
-        return "User({}, {},{}, {}, {}, {})".format(
+        return "User({}, {}, {}, {}, {}, {}, {})".format(
             self.first_name,
             self.last_name,
             self.email,
@@ -47,12 +46,12 @@ class User(Base):
         )
 
     def __str__(self):
-        return "name: {}, email: {}, phone_num: {}, role: {}".format(
-            self.first_name + self.last_name,
-            self.email,
-            self.phone_num,
-            self.role,
-        )
+        return "(name: {}, email: {}, phone_num: {}, role: {})".format(
+                self.first_name + self.last_name,
+                self.email,
+                self.phone_num,
+                self.role,
+            )
 
 
 class Drafts(Base):
@@ -66,55 +65,22 @@ class Drafts(Base):
     title = Column(String(250), nullable=False)
     content = Column(Text, nullable=False)
     publish = Column(Boolean, default=False, nullable=False)
-    doc_url = Column(JSON)
     date_created = Column(DateTime, nullable=False)
     last_updated = Column(DateTime)
 
     def __repr__(self):
         return "Drafts({}, {}, {}, {}, {})".format(
             self.user_id,
+            self.title,
             self.content,
             self.publish,
-            self.doc_url,
             self.date_created,
         )
 
     def __str__(self):
-        return "user_id: {}, content: {}, publish: {}, doc_url{}".format(
-            self.user_id, self.content, self.content, self.doc_url
-        )
-
-
-class Messages(Base):
-    __tablename__ = "messages"
-
-    msg_id = Column(
-        Integer, primary_key=True, index=True, autoincrement=True
-    )
-    msg = Column(Text, nullable=False)
-    from_id = Column(Integer, nullable=False, index=True)
-    to_id = Column(Integer, nullable=False)
-    docs = Column(JSON)
-    sent_time = Column(TIMESTAMP, nullable=False)
-
-    def __repr__(self):
-        return "Messages({}, {}, {}, {},{})".format(
-            self.msg, self.from_id, self.to_id, self.doc, self.sent_time
-        )
-
-    def __str__(self):
-        return "msg: {}, from: {}, to: {}, doc: {}, time_sent{}".format(
-            self.msg, self.from_id, self.to_id, self.doc, self.sent_time
-        )
-
-
-# class Folders(Base):
-#    __tablename__ = "folders"
-#
-#    folder_id = Cloumn(String(50), index=True, unique=True, nullable=False)
-#    name = Column(String(20), index=True, unique=True, nullable=False)
-#    perm_id = Cloumn(String(50), index=True, unique=True, nullable=False)
-#    has_access = Cloumn(String(30), index=True, unique=True, nullable=False)
+        return "(user ID: {}, title: {}, content: {}, publish: {})".format(
+                self.user_id, self.title, self.content, self.publish
+            )
 
 
 class Files(Base):
@@ -131,24 +97,27 @@ class Files(Base):
     date_uploaded = Column(DateTime, nullable=False)
 
     def __repr__(self):
-        return "Files({}, {}, {}. {})".format(
-            self.name, self.file_url, self.owner_id, self.folder
+        return "Files({}, {}, {}, {}, {}, {})".format(
+            self.name,
+            self.file_url,
+            self.owner_id,
+            self.folder,
+            self.size,
+            self.date_uploaded,
         )
 
     def __str__(self):
-        return (
-            "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
+        return "(file_name: {}, url: {}, owner_id: {}, folder: {})".format(
                 self.name, self.file_url, self.owner_id, self.folder
             )
-        )
 
 
 class RecievedNotes(Base):
     __tablename__ = "received_notes"
 
     ref_id = Column(Integer, primary_key=True, autoincrement=True)
-    title = Column(String(250))
-    content = Column(Text)
+    title = Column(String(250), nullable=False)
+    content = Column(Text, nullable=False)
     from_id = Column(Integer, nullable=False)
     from_name = Column(String(50), nullable=False)
     to_id = Column(
@@ -156,7 +125,13 @@ class RecievedNotes(Base):
         ForeignKey("users.user_id", ondelete="SET NULL"),
         index=True,
     )
+
     sent_time = Column(DateTime)
+
+    def __repr__(self):
+        return "RecievedNotes({}, {}, {}, {})".format(
+            self.title, self.content, self.from_id, self.from_name
+        )
 
     def __str__(self):
         return "(title: {}, content: {}, from_id: {}, to_id: {}, sent_time: {})".format(
@@ -187,11 +162,8 @@ class Invoices(Base):
     flw_txref = Column(String(20))
     ref_id = Column(String(15))
 
-
     def __str__(self):
-        return (
-            "(inv_id: {}, tile: {}, created_by: {}, to_user: {}, "
-            "price: {}, due_date: {}, paid: {}, updated_at: {}, updated_by: {})".format(
+        return "(inv_id: {}, tile: {}, created_by: {}, to_user: {}, price: {}, due_date: {}, paid: {}, updated_at: {}, updated_by: {})".format(
                 self.inv_id,
                 self.title,
                 self.created_by,
@@ -202,7 +174,6 @@ class Invoices(Base):
                 self.updated_at,
                 self.updated_by,
             )
-        )
 
 
 class Payments(Base):
@@ -211,6 +182,7 @@ class Payments(Base):
     ref_id = Column(
         String(15), primary_key=True, nullable=False, index=True
     )
+
     flw_ref = Column(String(50))
     flw_txRef = Column(String(20))
     inv_id = Column(
@@ -218,6 +190,7 @@ class Payments(Base):
         ForeignKey("invoices.inv_id", ondelete="SET DEFAULT"),
         nullable=False,
     )
+
     title = Column(String(50))
     amount = Column(Numeric(precision=15, scale=2), nullable=False)
     paid = Column(Boolean, default=False)
@@ -228,3 +201,15 @@ class Payments(Base):
     paid_amount = Column(Numeric(precision=15, scale=2))
     checkout_type = Column(String(30))
     payment_type = Column(String(15))
+
+    def __str__(self):
+        return "(refID: {}, invoiceID: {}, amount: {}, paid: {}, status: {}, client: {}, checkout_type: {}, payment_type: {}".format(
+            self.ref_id,
+            self.inv_id,
+            self.aamount,
+            self.paid,
+            self.status,
+            self.payer_email,
+            self.checkout_type,
+            self.payment_type,
+        )

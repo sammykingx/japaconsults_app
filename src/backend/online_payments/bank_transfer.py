@@ -47,9 +47,6 @@ async def start_bank_transfer(
     resp = get_virtual_account(data)
     data.update(resp["meta"]["authorization"])
 
-    print("\nref_id => ", ref_id)
-    print("\nrave_resp =>", resp)
-
     payment_record = payments_utils.payment_serializer(
         ref_id,
         record,

@@ -94,14 +94,6 @@ class CreateInvoice(BaseModel):
         }
 
 
-class SendMessage(BaseModel):
-    msg: str
-    from_id: int
-    to_id: int
-    docs: list | None
-    sent_time: datetime
-
-
 class UpdateUserInfo(BaseModel):
     user_id: int
     phone_num: str | None
