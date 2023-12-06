@@ -280,7 +280,7 @@ def build_payment_payload(
         "amount": price,
         "customer": customer,
         # "redirect_url": "http://localhost:5000/flutterwave/callback",
-        "redirect_url": "https://visionary-platypus-2646e2.netlify.app/flutterwave/callback",
+        "redirect_url": os.getenv("FRONTEND_URL") + "/flutterwave/callback",
         "customizations": {
             "title": "japaconsults",
             "logo": "https://japaconsults.com/wp-content/"

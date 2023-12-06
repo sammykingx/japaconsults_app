@@ -23,7 +23,7 @@ from docs.auth import (
 )
 import datetime, jwt, pathlib, os
 
-
+load_dotenv()
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 
 CREDENTIALS_EXCEPTION = HTTPException(
@@ -33,7 +33,6 @@ CREDENTIALS_EXCEPTION = HTTPException(
 def validate_email_token(token: str) -> dict:
     """checks if the email token received is still valid"""
 
-    load_dotenv()
     try:
         encoded_data = jwt.decode(
             token, os.getenv("SECRET_KEY"), os.getenv("ALGORITHM")
@@ -133,6 +132,7 @@ async def generate_email_token(
             {
                 "user": f"{user.first_name} {user.last_name}",
                 "email_token": email_token,
+                "url": os.getenv("FRONTEND_URL"),
                 "request": req,
             },
         ).body.decode()
@@ -154,6 +154,7 @@ async def generate_email_token(
             {
                 "user": f"{user.first_name} {user.last_name}",
                 "email_token": email_token,
+                "url": os.getenv("FRONTEND_URL"),
                 "request": req,
             },
         ).body.decode()
