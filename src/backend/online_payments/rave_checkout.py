@@ -282,7 +282,7 @@ def build_payment_payload(
         # "redirect_url": "http://localhost:5000/flutterwave/callback",
         "redirect_url": "https://visionary-platypus-2646e2.netlify.app/flutterwave/callback",
         "customizations": {
-            "title": "sammykingx-japaconsults",
+            "title": "japaconsults",
             "logo": "https://japaconsults.com/wp-content/"
             "uploads/2021/05/LogoMakr-6zrJ19.png",
         },

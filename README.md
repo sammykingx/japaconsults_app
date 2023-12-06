@@ -27,11 +27,55 @@ JAPA_APP is a comprehensive application designed to streamline japaconsults busi
 - __Messaging/Notes Sharing__: The application also provides a means to stay updated with staff and clients using the built-in messaging/note  sharing system. Send messages, share updates, and maintain clear and efficient communication, all within the same platform.
 
 ## Getting Started
-The sign up process is done in 3 easy steps, within 3mins
+- clone the repository to your local machine
+- create a `.env` file at the root of the repository and provide values for the below parameters
+```env
+# FOR DATABASE
+DATABASE_URI = ""
 
-1. Sign up for an account.
-2. Invite your team members and clients to join the platform.
-3. Begin uploading files, managing payments, and communicating effectively.
+# FOR JWT
+SECRET_KEY = ""
+ALGORITHM = ""
+TOKEN_EXPIRATION_TIME = 
+
+# SMTP CONFIGURATIONS
+SMTP_HOST = ""
+SMTP_MAIL = ""
+SMTP_PWD = ""
+SMTP_PORT = ""
+
+#  for rave payments
+# RAVE ACCOUNT KEYS
+RAVE_PUBLIC_KEY = ""
+RAVE_SECRET_KEY = ""
+RAVE_ENCRYPTION_KEY = ""
+
+# RAVE ACCOUNT KEYS
+LIVE_PUBLIC_KEY = ""
+LIVE_SECRET_KEY = ""
+LIVE_ENCRYPTION_KEY = ""
+
+# RAVE ENDPOINTS FOR VERIFICATION
+CHECKOUT_ENDPOINT = ""
+VERIFY_BY_ID = ""
+VERIFY_BY_REF = ""
+BANK_TRANSFER_ENDPOINT = ""
+```
+- run this command on terminal _if not installed_
+```bash
+sudo apt install python3 python3-pip python3-venv nginx mysql-server -y
+```
+
+- create and activate virtual environment to install python packages
+```
+python3 -m venv venv && source venv/bin/activate
+```
+_make sure you're at the root of the repository_
+
+- install packages in `requirements.txt`
+```bash
+pip install -r requirements.txt
+```
 
 ## Routes / Endpoints
 
