@@ -128,14 +128,13 @@ async def generate_email_token(
     templates = Jinja2Templates(directory="templates")
     if verv_type == auth_schema.TokenType.new_user:
         message = templates.TemplateResponse(
-            "email_verification.html",
-            {
-                "user": f"{user.first_name} {user.last_name}",
-                "email_token": email_token,
-                "url": os.getenv("FRONTEND_URL"),
-                "request": req,
-            },
-        ).body.decode()
+                "verify_email.html",
+                {
+                    "user": f"{user.first_name} {user.last_name}",
+                    "email_token": email_token,
+                    "url": os.getenv("FRONTEND_URL"),
+                    "request": req}
+                ).body.decode()
 
         # email_notification.send_email(
         #    message, mail, "Account Verification Required"
@@ -150,7 +149,7 @@ async def generate_email_token(
 
     else:
         message = templates.TemplateResponse(
-            "changePassword.html",
+            "password_change.html",
             {
                 "user": f"{user.first_name} {user.last_name}",
                 "email_token": email_token,

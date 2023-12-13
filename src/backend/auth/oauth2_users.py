@@ -48,7 +48,7 @@ def email_verification_token(email: EmailStr) -> str:
     user_data = {
         "email": email,
         "iat": datetime.utcnow(),
-        "exp": datetime.utcnow() + timedelta(minutes=60),
+        "exp": datetime.utcnow() + timedelta(minutes=int(os.getenv("TOKEN_EXPIRATION_TIME"))),
     }
 
     token = jwt.encode(
@@ -80,7 +80,7 @@ def create_token(user) -> str:
     data = token_payload(user)
     dup_data = data.copy()
     iat = datetime.utcnow()
-    exp = datetime.utcnow() + timedelta(minutes=60)
+    exp = datetime.utcnow() + timedelta(minutes=int(os.getenv("TOKEN_EXPIRATION_TIME")))
     dup_data.update({"iat": iat, "exp": exp})
 
     token = jwt.encode(

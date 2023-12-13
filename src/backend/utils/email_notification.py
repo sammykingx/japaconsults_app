@@ -33,6 +33,7 @@ def send_email(message, to_addr, subject, attachment=None):
                 mail_server.login(
                     os.getenv("SMTP_MAIL"), os.getenv("SMTP_PWD")
                 )
+
                 resp = mail_server.send_message(mail_msg)
 
             except smtplib.SMTPConnectError:
